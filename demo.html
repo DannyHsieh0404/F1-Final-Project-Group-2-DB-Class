@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>College of Management, NSYSU — 活動平台</title>
+    <link href="demo.css" type="text/css" rel="stylesheet"/>
+    <script src="demo.js" type="text/javascript" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+
+</head>
+    
+
+
+<div id="app">
+  <!-- SCREENS WRAP (desktop: right column) -->
+  <div class="screens-wrap">
+    <!-- SCREEN 1: ACTIVITIES -->
+    <div class="screen active" id="screen-events">
+
+      <div class="page-header">
+        <h1>探索活動</h1>
+        <p>找到屬於你的精彩體驗</p>
+      </div>
+
+      <div class="banner-wrap">
+        <div class="banner-scroll" id="bannerScroll">
+
+          <div class="banner-card" onclick="openDetail(0)">
+            <div class="label">🔥 熱門</div>
+            <div class="people">128 / 200 人</div>
+            <div class="title">2025 校際籃球錦標賽</div>
+          </div>
+
+          <div class="banner-card" onclick="openDetail(1)">
+            <div class="label">🎨 新上架</div>
+            <div class="people">45 / 80 人</div>
+            <div class="title">陶藝創作工作坊</div>
+          </div>
+
+          <div class="banner-card" onclick="openDetail(2)">
+            <div class="label">🎵 限量</div>
+            <div class="people">67 / 70 人</div>
+            <div class="title">爵士之夜音樂節</div>
+          </div>
+
+        </div>
+
+        <div class="banner-dot">
+          <span class="on" id="d0"></span>
+          <span id="d1"></span>
+          <span id="d2"></span>
+        </div>
+
+      </div>
+      <div class="section-title">所有活動 <span>查看全部</span></div>
+      <div class="activity-list"></div>
+    </div>
+
+    <!-- SCREEN 2: MY ACTIVITIES -->
+    <div class="screen" id="screen-mine">
+
+      <div class="page-header">
+        <h1>我的活動</h1>
+        <p>已報名的活動一覽</p>
+      </div>
+
+      <div id="mine-content"></div>
+
+    </div>
+
+    <!-- SCREEN 3: PROFILE -->
+    <div class="screen" id="screen-profile">
+      <div id="profile-content"></div>
+    </div>
+
+    <!-- DETAIL OVERLAY -->
+    <div class="overlay" id="detailOverlay" onclick="closeDetail(event)">
+
+      <div class="detail-sheet" id="detailSheet">
+
+        <div class="sheet-handle"></div>
+
+        <div class="sheet-header">
+          <h2 id="dTitle"></h2>
+          <div class="close-btn" onclick="closeDetailForce()"><i class="ti ti-x"></i></div>
+        </div>
+
+        <div class="sheet-hero" id="dHero"></div>
+
+        <div class="sheet-body">
+          <div class="sheet-tags" id="dTags"></div>
+          <div class="sheet-info-row"><i class="ti ti-calendar"></i><span id="dDate"></span></div>
+          <div class="sheet-info-row"><i class="ti ti-map-pin"></i><span id="dLocation"></span></div>
+          <div class="sheet-desc" id="dDesc"></div>
+
+          <div class="quota-card">
+            <div><div class="quota-num" id="dQuota"></div><div class="quota-label">已報名人數</div></div>
+            <div style="text-align:right"><div class="quota-num" id="dMax"></div><div class="quota-label">總名額</div></div>
+          </div>
+
+          <button class="register-btn" onclick="handleRegister()" id="regBtn">立即報名</button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM / SIDE NAV -->
+  <nav class="nav" id="mainNav">
+
+    <div class="nav-logo" id="navLogo" style="display:none">
+      <h2>中山大學</h2>
+      <p>活動報名平台</p>
+    </div>
+
+    <div class="nav-item active" onclick="switchTab(0)" id="nav0"><i class="ti ti-compass"></i>探索</div>
+    <div class="nav-item" onclick="switchTab(1)" id="nav1"><i class="ti ti-calendar-event"></i>我的活動</div>
+    <div class="nav-item" onclick="switchTab(2)" id="nav2"><i class="ti ti-user-circle"></i>個人資料</div>
+
+  </nav>
+
+  <!-- AUTH MODAL -->
+  <div class="modal-wrap" id="authModal">
+    <div class="modal">
+      <h2>請先登入</h2>
+      <p>登入後即可完成報名</p>
+
+      <div class="modal-tabs">
+        <div class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">登入</div>
+        <div class="modal-tab" id="tabReg" onclick="switchAuthTab('reg')">註冊</div>
+      </div>
+
+      <div class="modal-form" id="loginForm">
+        <input type="text" placeholder="學號" id="loginId">
+        <input type="password" placeholder="密碼" id="loginPw">
+        <button class="modal-submit" onclick="doLogin()">登入</button>
+        <button class="modal-cancel" onclick="closeAuth()">取消</button>
+      </div>
+
+      <div class="modal-form" id="regForm" style="display:none">
+        <input type="text" placeholder="學號" id="rId">
+        <input type="text" placeholder="姓名" id="rName">
+        <input type="text" placeholder="電話號碼" id="rPhone">
+        <input type="email" placeholder="電子郵件" id="rEmail">
+        <input type="text" placeholder="系所" id="rDept">
+        <input type="password" placeholder="密碼" id="rPw">
+        <button class="modal-submit" onclick="doRegister()">註冊</button>
+        <button class="modal-cancel" onclick="closeAuth()">取消</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MEAL MODAL -->
+  <div class="modal-wrap" id="mealModal">
+    <div class="modal">
+      <h2>選擇餐點</h2>
+      <p>請選擇您的餐點偏好</p>
+
+      <div class="meal-opt">
+        <button class="meal-btn" id="meatBtn" onclick="selectMeal('meat')"><i class="ti ti-meat"></i>葷食</button>
+        <button class="meal-btn" id="vegBtn" onclick="selectMeal('veg')"><i class="ti ti-leaf"></i>素食</button>
+      </div>
+
+      <button class="modal-submit" onclick="submitReg()" id="submitMealBtn" style="opacity:0.5;pointer-events:none">確認報名</button>
+      <button class="modal-cancel" onclick="closeMeal()">取消</button>
+
+    </div>
+  </div>
+
+  <!-- SUCCESS MODAL -->
+  <div class="modal-wrap" id="successModal">
+    <div class="modal">
+
+      <div class="modal-icon-wrap">
+        <div class="modal-circle success"><i class="ti ti-check"></i></div>
+        <h2 style="font-size:17px;font-weight:800">報名成功！</h2>
+        <p id="successMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+      </div>
+
+      <button class="modal-submit" onclick="goToMine()">查看我的活動</button>
+
+    </div>
+  </div>
+
+  <!-- CANCEL CONFIRM MODAL -->
+  <div class="modal-wrap" id="cancelModal">
+    <div class="modal">
+
+      <div class="modal-icon-wrap">
+        <div class="modal-circle cancel"><i class="ti ti-alert-triangle"></i></div>
+        <h2 style="font-size:17px;font-weight:800">確認取消報名？</h2>
+        <p id="cancelMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+      </div>
+
+      <button class="modal-submit" style="background:#EF4444" onclick="confirmCancel()">確認取消</button>
+      <button class="modal-cancel" onclick="closeCancelModal()">返回</button>
+
+    </div>
+  </div>
+
+  <!-- CANCEL SUCCESS MODAL -->
+  <div class="modal-wrap" id="cancelSuccessModal">
+    <div class="modal">
+
+      <div class="modal-icon-wrap">
+        <div class="modal-circle cancel"><i class="ti ti-x"></i></div>
+        <h2 style="font-size:17px;font-weight:800">已取消報名</h2>
+        <p id="cancelSuccessMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+      </div>
+
+      <button class="modal-submit" onclick="closeCancelSuccess()">確定</button>
+
+    </div>
+  </div>
+
+</div>
+</html>
