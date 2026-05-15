@@ -1,22 +1,31 @@
 const ACTS = [
-  { id:0, emoji:'🏀', color:'green', title:'2025 校際籃球錦標賽', date:'2025/03/15 09:00', loc:'體育館A館', tags:['體育','競賽'], quota:128, max:200, desc:'一年一度的校際籃球盛典！今年將有來自全台20所大學的隊伍參與角逐，精彩賽程分為初賽、準決賽及決賽三個階段，現場備有熱情啦啦隊表演及豐富獎品。歡迎所有愛好運動的同學踴躍參與！' },
-  { id:1, emoji:'🎨', color:'orange', title:'陶藝創作工作坊', date:'2025/03/22 13:00', loc:'藝術中心301', tags:['藝術','手作'], quota:45, max:80, desc:'由知名陶藝家王老師親自指導，帶領參與者從零開始學習陶土塑形、拉坯技法與釉燒工序。每位學員可帶走自己親手製作的作品，名額有限，先報先得！' },
-  { id:2, emoji:'🎵', color:'purple', title:'爵士之夜音樂節', date:'2025/03/28 19:00', loc:'大禮堂', tags:['音樂','藝術'], quota:67, max:70, desc:'本校音樂系年度大型演出，今年以爵士樂為主題，邀請校內外共12組樂團輪番上陣，現場設有調酒區與輕食區，打造沉浸式音樂體驗之夜。' },
-  { id:3, emoji:'🌿', color:'blue', title:'永續生活工作坊', date:'2025/04/05 14:00', loc:'學生活動中心', tags:['環保','生活'], quota:30, max:60, desc:'與環保達人一起實踐低碳生活！課程涵蓋蜂蠟布製作、舊衣改造與有機廚餘堆肥，活動結束後每人可帶走專屬環保工具包。' },
+  { id:0, emoji:'🏀', color:'green', title:'2025 校際籃球錦標賽', date:'2025/03/15 09:00', loc:'體育館A館', tags:['體育','競賽'], quota:128, max:200, desc:'一年一度的校際籃球盛典！今年將有來自全台20所大學的隊伍參與角逐...' },
+  { id:1, emoji:'🎨', color:'orange', title:'陶藝創作工作坊', date:'2025/03/22 13:00', loc:'藝術中心301', tags:['藝術','手作'], quota:45, max:80, desc:'由知名陶藝家王老師親自指導，帶領參與者學習陶藝技巧...' },
+  { id:2, emoji:'🎵', color:'purple', title:'爵士之夜音樂節', date:'2025/03/28 19:00', loc:'大禮堂', tags:['音樂','藝術'], quota:67, max:70, desc:'音樂系年度爵士音樂演出，12組樂團輪番上陣...' },
+  { id:3, emoji:'🌿', color:'blue', title:'永續生活工作坊', date:'2025/04/05 14:00', loc:'學生活動中心', tags:['環保','生活'], quota:30, max:60, desc:'學習低碳生活與環保手作技巧，實作蜂蠟布與堆肥...' },
+  { id:4, emoji:'💻', color:'blue', title:'Python 入門黑客松', date:'2025/04/12 09:00', loc:'資訊大樓502', tags:['資訊','競賽'], quota:52, max:120, desc:'24小時程式設計挑戰賽，從零開始打造小型應用程式，適合新手與進階同學參加。' },
+  { id:5, emoji:'📸', color:'purple', title:'校園攝影展徵件', date:'2025/04/18 10:00', loc:'藝文走廊', tags:['藝術','展覽'], quota:20, max:50, desc:'徵集校園攝影作品，主題為「日常與光影」，優秀作品將於校園展出。' },
+  { id:6, emoji:'🧠', color:'orange', title:'心理學講座：壓力管理', date:'2025/04/20 14:00', loc:'綜合大樓B1演講廳', tags:['講座','生活'], quota:90, max:150, desc:'邀請心理師分享壓力調適技巧，提升學生心理健康與情緒管理能力。' },
+  { id:7, emoji:'🌏', color:'green', title:'國際文化交流日', date:'2025/04/25 11:00', loc:'學生活動中心', tags:['文化','交流'], quota:110, max:200, desc:'多國學生攤位交流活動，體驗各國文化、美食與傳統服飾。' },
+  { id:8, emoji:'🏃', color:'green', title:'校園路跑挑戰賽', date:'2025/05/02 07:00', loc:'操場', tags:['體育','健康'], quota:300, max:500, desc:'5公里校園路跑活動，完成即可獲得紀念獎牌與運動補給包。' },
+  { id:9, emoji:'🎮', color:'purple', title:'電競聯賽春季賽', date:'2025/05/10 18:00', loc:'電競館', tags:['競賽','娛樂'], quota:64, max:128, desc:'校內英雄聯盟與VALORANT電競比賽，爭奪校園冠軍榮耀。' },
+  { id:10, emoji:'🍳', color:'orange', title:'學生廚藝挑戰營', date:'2025/05/18 12:00', loc:'生活實驗室', tags:['生活','手作'], quota:25, max:40, desc:'學習基礎料理技巧，進行團隊料理比賽，最後由評審選出最佳料理組。' }
 ];
+const TAGCOLOR = { '體育':'green','競賽':'green',
+                  '藝術':'purple','手作':'orange',
+                  '音樂':'purple',
+                  '環保':'blue','生活':'blue' };//定義tag顏色
+const HEROCOLOR = {green:'var(--primary-pale)',orange:'var(--accent-pale)',purple:'#EDE7F6',blue:'#E3F2FD'};//顏色代號 轉成實際背景色//
 
-const TAGCOLOR = { '體育':'green','競賽':'green','藝術':'purple','手作':'orange','音樂':'purple','環保':'blue','生活':'blue' };
-const HEROCOLOR = {green:'var(--primary-pale)',orange:'var(--accent-pale)',purple:'#EDE7F6',blue:'#E3F2FD'};
+let currentUser = null;                 //預設使用者沒有登入
+let myActivities = [];                  //預設一開始沒有報名任何活動
+let currentDetailId = null;             //目前正在看的「活動詳細頁 ID」
+let selectedMeal = null;                //預設使用者還沒選餐點
+let pendingAfterAuth = false;           //登入後是否要「繼續剛剛的動作」>例如：使用者沒登入 → 點「報名」
+let cancelTargetId = null;              //要取消報名的活動 ID
+let profileEditing = false;             //個人資料是否在編輯狀態
 
-let currentUser = null;
-let myActivities = [];
-let currentDetailId = null;
-let selectedMeal = null;
-let pendingAfterAuth = false;
-let cancelTargetId = null;
-let profileEditing = false;
-
-const FIELDS = [
+const FIELDS = [                        //定義「個人資料的欄位規格」
   {key:'id',label:'學號',icon:'ti-id-badge'},
   {key:'name',label:'姓名',icon:'ti-user'},
   {key:'phone',label:'電話號碼',icon:'ti-phone'},
@@ -25,146 +34,252 @@ const FIELDS = [
 ];
 
 // --- Desktop layout check ---
-function isDesktop() { return window.innerWidth >= 900; }
+function isDesktop() { return window.innerWidth >= 900; }//用來檢查是不是桌機(>900)
 
-function applyLayout() {
+function applyLayout() {                                // 根據螢幕大小調整版面（桌機 / 手機）
   const logo = document.getElementById('navLogo');
   const nav = document.getElementById('mainNav');
   const app = document.getElementById('app');
   const screensWrap = document.querySelector('.screens-wrap');
 
-  if (isDesktop()) {
+  if (isDesktop()) {  
+    // 桌機：顯示 logo + 側邊欄布局                               
     logo.style.display = 'block';
     // Reorder: sidebar right (grid order), screens left
     app.style.gridTemplateColumns = 'var(--sidebar-w) 1fr';
     nav.style.order = '-1'; // sidebar on left
   } else {
+    // 手機：隱藏 logo
     logo.style.display = 'none';
   }
 }
 
+// 視窗改變時重新套用版面
 window.addEventListener('resize', applyLayout);
+
+// 初始化版面
 applyLayout();
 
 // --- TABS ---
+// 所有頁面（screen）ID
 const screens = ['screen-events','screen-mine','screen-profile'];
+
+// 導覽列按鈕 ID
 const navs = ['nav0','nav1','nav2'];
 
+// 切換頁面
 function switchTab(i) {
-  screens.forEach((s,idx) => document.getElementById(s).classList.toggle('active', idx===i));
-  navs.forEach((n,idx) => document.getElementById(n).classList.toggle('active', idx===i));
-  if(i===1) renderMine();
-  if(i===2) renderProfile();
+  screens.forEach((s, idx) =>
+    document.getElementById(s).classList.toggle('active', idx === i)        // 顯示對應 screen，其它隱藏
+  );
+
+  navs.forEach((n, idx) =>
+    document.getElementById(n).classList.toggle('active', idx === i)        // 切換 nav active 狀態
+  );
+  if (i === 1) renderMine();                                                // 切到「我的活動」時更新資料
+  if (i === 2) renderProfile();                                             // 切到「個人資料」時更新資料
 }
 
 // --- RENDER CARDS ---
-function renderCards() {
-  const list = document.querySelector('.activity-list');
+function renderCards() {                                                    // 產生活動卡片列表
+
+  const list = document.querySelector('.activity-list');                    // 取得活動列表容器
+
+  // 把 ACTS 轉成 HTML 字串
   list.innerHTML = ACTS.map(a => {
-    const reg = myActivities.find(m=>m.id===a.id);
-    const pct = Math.round(a.quota/a.max*100);
+
+    // 檢查使用者是否已報名
+    const reg = myActivities.find(m => m.id === a.id);
+
+    // 報名進度百分比
+    const pct = Math.round(a.quota / a.max * 100);
+
     return `
     <div class="act-card" onclick="openDetail(${a.id})">
-      <div class="act-card-top">
+
+      
+      <div class="act-card-top">                                  
+
+        <!-- 圖示 -->
         <div class="act-thumb ${a.color}">${a.emoji}</div>
+
+        <!-- 活動資訊 -->
         <div class="act-info">
+
+          <!-- 標題 -->
           <h3>${a.title}</h3>
-          <div class="act-meta"><i class="ti ti-calendar" style="font-size:12px;color:var(--text-muted)"></i><span class="act-date">${a.date}</span></div>
-          <div class="act-tags">${a.tags.map(t=>`<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('')}${reg?'<span class="tag green">✓ 已報名</span>':''}</div>
+
+          <!-- 日期 -->
+          <div class="act-meta">
+            <i class="ti ti-calendar"></i>
+            <span class="act-date">${a.date}</span>
+          </div>
+
+          <!-- 標籤 -->
+          <div class="act-tags">
+
+            ${a.tags.map(t =>
+              `<span class="tag ${TAGCOLOR[t] || 'green'}">${t}</span>`
+            ).join('')}
+
+            ${reg ? '<span class="tag green">✓ 已報名</span>' : ''}
+
+          </div>
         </div>
       </div>
+
+      <!-- 卡片下半部 -->
       <div class="act-bottom">
+
+        <!-- 報名進度條 -->
         <div class="progress-wrap">
-          <div class="progress-label">${a.quota} / ${a.max} 人已報名</div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="progress-label">
+            ${a.quota} / ${a.max} 人已報名
+          </div>
+
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${pct}%"></div>
+          </div>
         </div>
-        <span class="act-spots">${a.max - a.quota} 名額</span>
+
+        <!-- 剩餘名額 -->
+        <span class="act-spots">
+          ${a.max - a.quota} 名額
+        </span>
+
       </div>
     </div>`;
   }).join('');
 }
-
 // --- DETAIL ---
+// 開啟活動詳細頁
 function openDetail(id) {
+
+  // 取得該活動資料
   const a = ACTS[id];
+
+  // 記住目前看的活動
   currentDetailId = id;
+
+  // ===== 填入詳細頁內容 =====
+
+  // 標題
   document.getElementById('dTitle').textContent = a.title;
+
+  // 圖示 + 背景色
   document.getElementById('dHero').textContent = a.emoji;
   document.getElementById('dHero').style.background = HEROCOLOR[a.color];
-  document.getElementById('dTags').innerHTML = a.tags.map(t=>`<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('');
+
+  // 標籤
+  document.getElementById('dTags').innerHTML =
+    a.tags.map(t =>
+      `<span class="tag ${TAGCOLOR[t] || 'green'}">${t}</span>`
+    ).join('');
+
+  // 日期 / 地點 / 描述
   document.getElementById('dDate').textContent = a.date;
   document.getElementById('dLocation').textContent = a.loc;
   document.getElementById('dDesc').textContent = a.desc;
+
+  // 人數資訊
   document.getElementById('dQuota').textContent = a.quota;
   document.getElementById('dMax').textContent = a.max;
-  const already = myActivities.find(m=>m.id===id);
+
+  // ===== 報名按鈕狀態控制 =====
+
+  const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
-  if(already) {
+
+  // 已報名 → 顯示取消
+  if (already) {
     btn.textContent = '✕ 取消報名';
     btn.className = 'register-btn cancel';
     btn.disabled = false;
-  } else if(a.quota >= a.max) {
+
+  // 名額已滿 → 禁用
+  } else if (a.quota >= a.max) {
     btn.textContent = '名額已滿';
     btn.className = 'register-btn';
     btn.disabled = true;
+
+  // 可報名
   } else {
     btn.textContent = '立即報名';
     btn.className = 'register-btn';
     btn.disabled = false;
   }
+
+  // 打開詳細頁彈窗
   document.getElementById('detailOverlay').classList.add('open');
 }
 
-function closeDetail(e) { if(e.target===document.getElementById('detailOverlay')) closeDetailForce(); }
-function closeDetailForce() { document.getElementById('detailOverlay').classList.remove('open'); }
-
+// 點背景關閉詳細頁（避免點到內容區誤關）
+function closeDetail(e) {
+  if (e.target === document.getElementById('detailOverlay'))
+    closeDetailForce();
+}
+// 強制關閉詳細頁
+function closeDetailForce() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+// 報名 / 取消報名流程
 function handleRegister() {
   const already = myActivities.find(m=>m.id===currentDetailId);
   if(already) {
-    openCancelModal(currentDetailId);
+    openCancelModal(currentDetailId);// 已報名 → 進入取消流程
     return;
   }
-  if(!currentUser) {
+  if(!currentUser) {// 未登入 → 先登入
     pendingAfterAuth = true;
     document.getElementById('authModal').classList.add('open');
-  } else {
+  } else { // 已登入 → 選餐點
     selectedMeal = null;
+
+    // 重置餐點選擇 UI
     document.getElementById('meatBtn').classList.remove('selected');
     document.getElementById('vegBtn').classList.remove('selected');
+
+    // 禁用確認按鈕
     document.getElementById('submitMealBtn').style.opacity='0.5';
     document.getElementById('submitMealBtn').style.pointerEvents='none';
+
+    // 開啟餐點選擇視窗
     document.getElementById('mealModal').classList.add('open');
   }
 }
 
-function selectMeal(type) {
+function selectMeal(type) {// 選擇餐點
   selectedMeal = type;
+
+  // 更新 UI 選取狀態
   document.getElementById('meatBtn').classList.toggle('selected', type==='meat');
   document.getElementById('vegBtn').classList.toggle('selected', type==='veg');
+
+  // 啟用確認按鈕
   document.getElementById('submitMealBtn').style.opacity='1';
   document.getElementById('submitMealBtn').style.pointerEvents='auto';
 }
 
-function submitReg() {
+function submitReg() {// 完成報名
   const a = ACTS[currentDetailId];
-  myActivities.push({ id:a.id, title:a.title, emoji:a.emoji, color:a.color, date:a.date, meal:selectedMeal });
-  a.quota = Math.min(a.quota+1, a.max);
-  document.getElementById('mealModal').classList.remove('open');
-  document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
+  myActivities.push({ id:a.id, title:a.title, emoji:a.emoji, color:a.color, date:a.date, meal:selectedMeal });// 加入我的活動
+  a.quota = Math.min(a.quota+1, a.max); // 更新名額
+  document.getElementById('mealModal').classList.remove('open');// 關閉餐點視窗
+  document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;  // 顯示報名成功訊息
   document.getElementById('successModal').classList.add('open');
-  renderCards();
+  renderCards(); // 更新首頁卡片
 }
 
-function goToMine() {
+function goToMine() {// 成功後跳轉我的活動
   document.getElementById('successModal').classList.remove('open');
-  closeDetailForce();
-  switchTab(1);
+  closeDetailForce();// 關閉詳細頁
+  switchTab(1);// 切到「我的活動」
 }
 
-function closeMeal() { document.getElementById('mealModal').classList.remove('open'); }
+function closeMeal() { document.getElementById('mealModal').classList.remove('open'); }// 關閉餐點選擇視窗
 
 // --- CANCEL LOGIC ---
-function openCancelModal(id) {
+function openCancelModal(id) {// 開啟取消報名視窗
   cancelTargetId = id;
   const a = ACTS[id];
   document.getElementById('cancelMsg').textContent = `確定要取消「${a.title}」的報名嗎？取消後名額將釋出。`;
@@ -331,5 +446,62 @@ document.getElementById('bannerScroll').addEventListener('scroll', ()=>{
   const idx=Math.round(el.scrollLeft/(el.firstElementChild?.offsetWidth+12||252));
   ['d0','d1','d2'].forEach((d,i)=>{ document.getElementById(d).className=i===idx?'on':''; });
 });
+
+
+
+
+
+
+
+
+let bannerIndex = 0;
+let bannerTimer = null;
+
+function getBannerWidth() {
+  const el = document.getElementById('bannerScroll');
+  if (!el || !el.firstElementChild) return 0;
+  return el.firstElementChild.offsetWidth + 12;
+}
+
+function updateDots(index) {
+  ['d0', 'd1', 'd2'].forEach((id, i) => {
+    document.getElementById(id).classList.toggle('on', i === index);
+  });
+}
+
+function moveBanner(index) {
+  const el = document.getElementById('bannerScroll');
+  const width = getBannerWidth();
+
+  el.scrollTo({
+    left: index * width,
+    behavior: 'smooth'
+  });
+
+  updateDots(index);
+}
+
+function nextBanner() {
+  const el = document.getElementById('bannerScroll');
+  const total = el.children.length;
+
+  bannerIndex = (bannerIndex + 1) % total;
+  moveBanner(bannerIndex);
+}
+
+function startBannerAuto() {
+  bannerTimer = setInterval(nextBanner, 3000);
+}
+
+startBannerAuto();
+
+const banner = document.getElementById('bannerScroll');
+
+banner.addEventListener('touchstart', () => clearInterval(bannerTimer));
+banner.addEventListener('mouseenter', () => clearInterval(bannerTimer));
+
+banner.addEventListener('touchend', startBannerAuto);
+banner.addEventListener('mouseleave', startBannerAuto);
+
 
 renderCards();
