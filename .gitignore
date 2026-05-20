@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+
+#.venv/	不上傳虛擬環境
+#__pycache__/	不上傳 Python 快取
+#*.pyc	不上傳編譯檔
+#.env	不上傳密碼/API key
