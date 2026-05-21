@@ -1,11 +1,25 @@
-from flask import Flask, jsonify, request
+import os
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from db_config import get_db_connection
 import sqlite3
 
-app = Flask(__name__)
-# 啟用 CORS 讓前端的 demo.js 可以順利呼叫 API
+# 設定前端靜態檔案的資料夾路徑 (位於專案根目錄下的 test 資料夾)
+FRONTEND_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test')
+app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path='')
+
+# 啟用 CORS 讓前端的網頁可以順利呼叫 API
 CORS(app)
+
+# === 提供前端網頁路由 ===
+@app.route('/')
+def serve_index():
+    return send_from_directory(app.static_folder, 'test.html')
+
+# === 提供網頁所需的其他靜態檔案 (css, js) ===
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(app.static_folder, path)
 
 # 1. 取得所有活動列表
 @app.route('/api/events', methods=['GET'])
@@ -162,7 +176,8 @@ def cancel_event():
 @app.route('/api/user', methods=['PUT'])
 def update_user_profile():
     data = request.json
-    user_id = data.get('id_db')  # 使用資料庫內的 user_id
+    # 支援前端傳來的 'id' 或 'id_db' 作為 user_id
+    user_id = data.get('id_db') or data.get('id')
     
     if not user_id:
         return jsonify({"error": "Missing user_id"}), 400
@@ -173,19 +188,127 @@ def update_user_profile():
         query = """
             UPDATE User 
             SET name = ?, phone = ?, email = ?, department = ?
-            WHERE user_id = ?
+            WHERE email = ? OR user_id = ?
         """
         cursor.execute(query, (
             data.get('name'), 
             data.get('phone'), 
             data.get('email'), 
             data.get('dept'), 
+            user_id,
             user_id
         ))
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
         conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+# 6. 使用者登入
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    account = data.get('id')
+    password = data.get('pw')
+    role = data.get('role')
+    
+    conn = get_db_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        # 我們直接使用 email 當作帳號來搜尋
+        cursor.execute("SELECT * FROM User WHERE email = ?", (account,))
+        user = cursor.fetchone()
+        
+        if user:
+            # 簡單密碼比對 (這邊先不特別做複雜加密校驗，若原本資料庫有存密碼，您後續可以補上 bcrypt 或相應邏輯)
+            if user['password'] == password:
+                user_dict = dict(user)
+                return jsonify({
+                    "success": True, 
+                    "user": {
+                        "id": user_dict['email'],      # 帳號為 email
+                        "id_db": user_dict['user_id'], # 實際 DB 的 PK
+                        "name": user_dict['name'],
+                        "phone": user_dict['phone'],
+                        "email": user_dict['email'],
+                        "dept": user_dict['department'],
+                        "role": user_dict['role']
+                    }
+                })
+        return jsonify({"error": "帳號或密碼錯誤"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+# 7. 使用者註冊
+@app.route('/api/register_user', methods=['POST'])
+def register_user():
+    data = request.json
+    account = data.get('id')  # 帳號為 email
+    password = data.get('pw')
+    role = data.get('role')
+    
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # 檢查是否已存在
+        cursor.execute("SELECT user_id FROM User WHERE email = ?", (account,))
+        if cursor.fetchone():
+            return jsonify({"error": "此帳號(Email)已被註冊"}), 400
+            
+        real_role = 'Organizer' if role == 'admin' else 'Student'
+        
+        query = """
+            INSERT INTO User (email, password, role, name, department, phone)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        # 初次註冊先塞入簡單名稱與預設資料，使用者後續可以在設定裡面編輯
+        cursor.execute(query, (account, password, real_role, "新使用者", "未設定", ""))
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+# 8. 取得特定活動的報名名單 (供管理員使用)
+@app.route('/api/registrations', methods=['GET'])
+def get_all_registrations():
+    # 改為抓取所有的報名紀錄，並用 event_id 來分組
+    conn = get_db_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        query = """
+            SELECT 
+                r.event_id,
+                u.email as uid,
+                u.name,
+                u.department as dept,
+                d.dietary_req as meal
+            FROM Registration r
+            JOIN User u ON r.user_id = u.user_id
+            LEFT JOIN Dietary_Req d ON r.registration_id = d.registration_id
+            WHERE r.status = 'Registered'
+        """
+        cursor.execute(query)
+        rows = [dict(row) for row in cursor.fetchall()]
+        
+        # 整理成以 event_id 為 key 的字典
+        regs_dict = {}
+        for row in rows:
+            eid = row.pop('event_id')
+            if eid not in regs_dict:
+                regs_dict[eid] = []
+            regs_dict[eid].append(row)
+            
+        return jsonify(regs_dict)
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
