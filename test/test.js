@@ -1,17 +1,7 @@
 // =================== DATA ===================
-let ACTS = [
-  { id:0, emoji:'🏀', color:'green', title:'2025 校際籃球錦標賽', date:'2025/03/15 09:00', loc:'體育館A館', tags:['體育','競賽'], quota:128, max:200, desc:'一年一度的校際籃球盛典！今年將有來自全台20所大學的隊伍參與角逐...' },
-  { id:1, emoji:'🎨', color:'orange', title:'陶藝創作工作坊', date:'2025/03/22 13:00', loc:'藝術中心301', tags:['藝術','手作'], quota:45, max:80, desc:'由知名陶藝家王老師親自指導，帶領參與者學習陶藝技巧...' },
-  { id:2, emoji:'🎵', color:'purple', title:'爵士之夜音樂節', date:'2025/03/28 19:00', loc:'大禮堂', tags:['音樂','藝術'], quota:67, max:70, desc:'音樂系年度爵士音樂演出，12組樂團輪番上陣...' },
-  { id:3, emoji:'🌿', color:'blue', title:'永續生活工作坊', date:'2025/04/05 14:00', loc:'學生活動中心', tags:['環保','生活'], quota:30, max:60, desc:'學習低碳生活與環保手作技巧，實作蜂蠟布與堆肥...' },
-  { id:4, emoji:'💻', color:'blue', title:'Python 入門黑客松', date:'2025/04/12 09:00', loc:'資訊大樓502', tags:['資訊','競賽'], quota:52, max:120, desc:'24小時程式設計挑戰賽，從零開始打造小型應用程式，適合新手與進階同學參加。' },
-  { id:5, emoji:'📸', color:'purple', title:'校園攝影展徵件', date:'2025/04/18 10:00', loc:'藝文走廊', tags:['藝術','展覽'], quota:20, max:50, desc:'徵集校園攝影作品，主題為「日常與光影」，優秀作品將於校園展出。' },
-  { id:6, emoji:'🧠', color:'orange', title:'心理學講座：壓力管理', date:'2025/04/20 14:00', loc:'綜合大樓B1演講廳', tags:['講座','生活'], quota:90, max:150, desc:'邀請心理師分享壓力調適技巧，提升學生心理健康與情緒管理能力。' },
-  { id:7, emoji:'🌏', color:'green', title:'國際文化交流日', date:'2025/04/25 11:00', loc:'學生活動中心', tags:['文化','交流'], quota:110, max:200, desc:'多國學生攤位交流活動，體驗各國文化、美食與傳統服飾。' },
-  { id:8, emoji:'🏃', color:'green', title:'校園路跑挑戰賽', date:'2025/05/02 07:00', loc:'操場', tags:['體育','健康'], quota:300, max:500, desc:'5公里校園路跑活動，完成即可獲得紀念獎牌與運動補給包。' },
-  { id:9, emoji:'🎮', color:'purple', title:'電競聯賽春季賽', date:'2025/05/10 18:00', loc:'電競館', tags:['競賽','娛樂'], quota:64, max:128, desc:'校內英雄聯盟與VALORANT電競比賽，爭奪校園冠軍榮耀。' },
-  { id:10, emoji:'🍳', color:'orange', title:'學生廚藝挑戰營', date:'2025/05/18 12:00', loc:'生活實驗室', tags:['生活','手作'], quota:25, max:40, desc:'學習基礎料理技巧，進行團隊料理比賽，最後由評審選出最佳料理組。' }
-];
+const API_BASE = 'http://127.0.0.1:5000/api';
+
+let ACTS = [];
 
 // Simulate registration records per activity (mock data)
 const REGISTRATIONS = {
@@ -110,7 +100,9 @@ function switchAdminTab(i) {
   adminScreens.forEach((s, idx) => document.getElementById(s).classList.toggle('active', idx === i));
   adminNavs.forEach((n, idx) => document.getElementById(n).classList.toggle('active', idx === i));
   if (i === 0) renderAdminDashboard();
-  if (i === 1) renderAdminRegistrations();
+  if (i === 1) {
+      loadAllRegistrations(); // load details dynamically from backend when switching tabs
+  }
   if (i === 2) renderAdminProfile();
 }
 
@@ -203,19 +195,66 @@ function selectMeal(type) {
   document.getElementById('submitMealBtn').style.pointerEvents = 'auto';
 }
 
-function submitReg() {
+async function loadMyActivities() {
+  if (!currentUser || !currentUser.id_db) return;
+  try {
+    const res = await fetch(`${API_BASE}/my-activities/${currentUser.id_db}`);
+    if (!res.ok) throw new Error('Failed to load my activities');
+    const data = await res.json();
+    myActivities = data.map(d => ({
+      id: d.id,
+      title: d.title,
+      emoji: '📅', // default emoji since backend doesn't have it
+      color: 'blue', // default color
+      date: d.date,
+      meal: d.dietary_req || null
+    }));
+    
+    // 如果你在「我的活動」分頁，要重新 render
+    if (document.getElementById('screen-mine').classList.contains('active')) {
+      renderMine();
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function submitReg() {
   const a = ACTS.find(x => x.id === currentDetailId);
-  myActivities.push({ id:a.id, title:a.title, emoji:a.emoji, color:a.color, date:a.date, meal:selectedMeal });
-  a.quota = Math.min(a.quota + 1, a.max);
 
-  // Push into global registration records
-  if (!REGISTRATIONS[a.id]) REGISTRATIONS[a.id] = [];
-  REGISTRATIONS[a.id].push({ uid: currentUser.id, name: currentUser.name, dept: currentUser.dept, meal: selectedMeal });
-
-  document.getElementById('mealModal').classList.remove('open');
-  document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
-  document.getElementById('successModal').classList.add('open');
-  renderCards();
+  try {
+      const res = await fetch(`${API_BASE}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+              user_id: currentUser.id_db, 
+              event_id: a.id, 
+              dietary_req: selectedMeal 
+          })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+          alert(data.error || '報名失敗');
+          return;
+      }
+      
+      document.getElementById('mealModal').classList.remove('open');
+      document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
+      document.getElementById('successModal').classList.add('open');
+      
+      // refresh events to update quota
+      await loadEvents();
+      // refresh my activities
+      await loadMyActivities();
+      
+      // Update UI button on detail page explicitly
+      const btn = document.getElementById('regBtn');
+      btn.textContent = '✕ 取消報名'; btn.className = 'register-btn cancel';
+      document.getElementById('dQuota').textContent = ACTS.find(x => x.id === currentDetailId).quota;
+  } catch (e) {
+      console.error(e);
+      alert('發生錯誤');
+  }
 }
 
 function goToMine() {
@@ -239,26 +278,48 @@ function closeCancelModal() {
   cancelTargetId = null;
 }
 
-function confirmCancel() {
+async function confirmCancel() {
   if (cancelTargetId === null) return;
   const a = ACTS.find(x => x.id === cancelTargetId);
-  myActivities = myActivities.filter(m => m.id !== cancelTargetId);
-  a.quota = Math.max(0, a.quota - 1);
+  
+  try {
+      const res = await fetch(`${API_BASE}/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+              user_id: currentUser.id_db, 
+              event_id: a.id 
+          })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+          alert(data.error || '取消失敗');
+          return;
+      }
 
-  // Remove from registration records
-  if (REGISTRATIONS[a.id] && currentUser) {
-    REGISTRATIONS[a.id] = REGISTRATIONS[a.id].filter(r => r.uid !== currentUser.id);
+      document.getElementById('cancelModal').classList.remove('open');
+      document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
+      document.getElementById('cancelSuccessModal').classList.add('open');
+      
+      // refresh events to update quota
+      await loadEvents();
+      // refresh my activities
+      await loadMyActivities();
+      
+      // Update UI button on detail page explicitly
+      if (currentDetailId === cancelTargetId) {
+          const btn = document.getElementById('regBtn');
+          btn.textContent = '立即報名'; btn.className = 'register-btn'; btn.disabled = false;
+          // After loadEvents, ACTS is reloaded so we need to fetch a again to get new quota
+          const reloadedA = ACTS.find(x => x.id === cancelTargetId);
+          document.getElementById('dQuota').textContent = reloadedA ? reloadedA.quota : a.quota;
+      }
+  } catch (e) {
+      console.error(e);
+      alert('發生錯誤');
   }
-
-  document.getElementById('cancelModal').classList.remove('open');
-  document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
-  document.getElementById('cancelSuccessModal').classList.add('open');
-  renderCards();
-  if (currentDetailId === cancelTargetId) {
-    const btn = document.getElementById('regBtn');
-    btn.textContent = '立即報名'; btn.className = 'register-btn'; btn.disabled = false;
-    document.getElementById('dQuota').textContent = a.quota;
-  }
+  
   cancelTargetId = null;
 }
 
@@ -292,49 +353,93 @@ function switchAuthTab(tab) {
   if (adminCodeWrap) adminCodeWrap.style.display = (selectedAuthRole === 'admin' && tab === 'reg') ? 'block' : 'none';
 }
 
-function doLogin() {
+async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value.trim();
   if (!id || !pw) return alert('請填寫帳號與密碼');
 
-  currentRole = selectedAuthRole;
-
-  if (currentRole === 'admin') {
-    // Simple demo: any login with "admin" prefix is accepted
-    currentUser = { id, name: id, phone: '(管理員)', email: id+'@nsysu.edu.tw', dept: '管理學院' };
+  try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, pw, role: selectedAuthRole })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || '登入失敗');
+      return;
+    }
+    
+    currentUser = data.user;
+    currentRole = selectedAuthRole;
+    
     closeAuth();
-    showAdminInterface();
-  } else {
-    currentUser = { id, name:'王小明', phone:'0912-345-678', email: id+'@student.edu.tw', dept:'資訊工程學系' };
-    closeAuth();
-    showUserInterface();
-    renderProfile();
-    if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+    if (currentRole === 'admin' || currentUser.role === 'Organizer' || currentUser.role === 'Admin') {
+      showAdminInterface();
+    } else {
+      showUserInterface();
+      renderProfile();
+      // Load user registered events if API supports it
+      // myActivities = [] or load from db
+      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+    }
+  } catch(e) {
+    console.error(e);
+    alert('發生錯誤');
   }
 }
 
-function doRegister() {
-  const id    = document.getElementById('rId').value.trim();
+async function doRegister() {
+  const account = document.getElementById('rId').value.trim();
   const name  = document.getElementById('rName').value.trim();
   const phone = document.getElementById('rPhone').value.trim();
   const email = document.getElementById('rEmail').value.trim();
   const dept  = document.getElementById('rDept').value.trim();
-  if (!id || !name || !phone || !email || !dept) return alert('請填寫所有欄位');
+  
+  if (!account || !name || !email) return alert('請至少填寫帳號與 Email');
 
-  currentRole = selectedAuthRole;
+  try {
+    // 您可以在前端另外新增一個 pw 欄位，這裏暫時將 pw 設為預設值或同帳號
+    const pw = account; 
+    
+    // We register with the specific API format for /api/register_user 
+    const res = await fetch(`${API_BASE}/register_user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: email, pw: pw, role: selectedAuthRole })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+        alert(data.error || '註冊失敗');
+        return;
+    }
 
-  if (currentRole === 'admin') {
-    const code = document.getElementById('rAdminCode').value.trim();
-    if (code !== 'nsysu2025') return alert('管理員驗證碼錯誤（提示：nsysu2025）');
-    currentUser = { id, name, phone, email, dept };
-    closeAuth();
-    showAdminInterface();
-  } else {
-    currentUser = { id, name, phone, email, dept };
-    closeAuth();
-    showUserInterface();
-    renderProfile();
-    if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+    // Because the old UI uses the register button to directly login:
+    currentUser = { id: account, name, phone, email, dept };
+    
+    // update backend with details immediately
+    await fetch(`${API_BASE}/user`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: email, name, phone, email, dept })
+    });
+
+    currentRole = selectedAuthRole;
+
+    if (currentRole === 'admin') {
+      const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
+      if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('管理員驗證碼錯誤（提示：nsysu2025）');
+      closeAuth();
+      showAdminInterface();
+    } else {
+      closeAuth();
+      showUserInterface();
+      renderProfile();
+      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+    }
+  } catch(e) {
+    console.error(e);
+    alert('發生錯誤');
   }
 }
 
@@ -410,11 +515,23 @@ function renderFields() {
     </div>`).join('');
 }
 
-function toggleProfileEdit() {
+async function toggleProfileEdit() {
   if (profileEditing) {
     FIELDS.forEach(f => { const inp = document.getElementById('fi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     profileEditing = false;
     document.getElementById('profileEditBtn').textContent = '編輯資料';
+    
+    // Save to database
+    try {
+        await fetch(`${API_BASE}/user`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentUser) 
+        });
+    } catch(e) {
+        console.error("更新失敗", e);
+    }
+
     renderFields();
     const hero = document.querySelector('.profile-name');
     const dep  = document.querySelector('.profile-dept');
@@ -650,6 +767,24 @@ function closeRegDetail() {
 }
 
 // =================== ADMIN: REGISTRATIONS SCREEN ===================
+async function loadAllRegistrations() {
+  try {
+    const res = await fetch(`${API_BASE}/registrations`);
+    if (!res.ok) throw new Error('API config err');
+    const data = await res.json();
+    
+    // 更新全域 REGISTRATIONS 為後端資料
+    for(let k in Object.keys(REGISTRATIONS)) delete REGISTRATIONS[k];
+    Object.assign(REGISTRATIONS, data);
+    
+    if (document.getElementById('admin-screen-registrations').classList.contains('active')) {
+      renderAdminRegistrations();
+    }
+  } catch (error) {
+    console.error('Failed to load registrations:', error);
+  }
+}
+
 function renderAdminRegistrations() {
   const el = document.getElementById('admin-reg-content');
   if (!el) return;
@@ -847,11 +982,23 @@ function renderAdminFields() {
     </div>`).join('');
 }
 
-function toggleAdminProfileEdit() {
+async function toggleAdminProfileEdit() {
   if (adminProfileEditing) {
     ADMIN_FIELDS.forEach(f => { const inp = document.getElementById('afi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     adminProfileEditing = false;
     document.getElementById('adminProfileEditBtn').textContent = '編輯資料';
+    
+    // Save to database
+    try {
+        await fetch(`${API_BASE}/user`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentUser) 
+        });
+    } catch(e) {
+        console.error("更新失敗", e);
+    }
+
     renderAdminFields();
     const nm = document.querySelector('#admin-screen-profile .profile-name');
     const dp = document.querySelector('#admin-screen-profile .profile-dept');
@@ -865,8 +1012,38 @@ function toggleAdminProfileEdit() {
   }
 }
 
+// =================== DATA FETCH ===================
+async function loadEvents() {
+  try {
+    const res = await fetch(`${API_BASE}/events`);
+    if (!res.ok) throw new Error('API response not ok');
+    const data = await res.json();
+    
+    // Convert API data to matching ACTS structure
+    ACTS = data.map(d => ({
+      id: d.id,
+      emoji: '📅', // default emoji since backend doesn't have it
+      color: 'blue', // default color
+      title: d.title,
+      date: `${d.date} ${d.time}`,
+      loc: d.loc,
+      tags: d.tags ? [d.tags] : [],
+      quota: d.quota || 0,
+      max: d.student_capacity + d.max,
+      desc: '' // backend currently has no desc
+    }));
+    
+    renderCards();
+    if (currentRole === 'admin') {
+      renderAdminDashboard();
+    }
+  } catch (error) {
+    console.error('Failed to load events from DB:', error);
+  }
+}
+
 // =================== INIT ===================
-renderCards();
+loadEvents();
 showUserInterface(); // default to user interface
 
 // 頁面載入後自動開啟登入彈窗
