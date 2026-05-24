@@ -71,10 +71,11 @@ function showUserInterface() {
   document.getElementById('adminApp').style.display = 'none';
 }
 
-function showAdminInterface() {
+async function showAdminInterface() {
   document.getElementById('userApp').style.display = 'none';
   document.getElementById('adminApp').style.display = 'contents';
   renderAdminNav();
+  await loadAllRegistrations(); // ← 加這行，進後台就先把報名資料撈進來
   renderAdminDashboard();
   renderAdminRegistrations();
   renderAdminProfile();
@@ -202,7 +203,7 @@ async function loadMyActivities() {
     if (!res.ok) throw new Error('Failed to load my activities');
     const data = await res.json();
     myActivities = data.map(d => ({
-      id: d.id,
+      id: Number(d.id),
       title: d.title,
       emoji: '📅', // default emoji since backend doesn't have it
       color: 'blue', // default color
@@ -242,10 +243,9 @@ async function submitReg() {
       document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
       document.getElementById('successModal').classList.add('open');
       
-      // refresh events to update quota
-      await loadEvents();
-      // refresh my activities
       await loadMyActivities();
+      await loadEvents();
+      
       
       // Update UI button on detail page explicitly
       const btn = document.getElementById('regBtn');
@@ -302,11 +302,12 @@ async function confirmCancel() {
       document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
       document.getElementById('cancelSuccessModal').classList.add('open');
       
-      // refresh events to update quota
-      await loadEvents();
-      // refresh my activities
+      // 先更新 myActivities，renderCards() 才能正確判斷 reg 是否存在
       await loadMyActivities();
+      // 再 loadEvents，裡面會呼叫 renderCards()，此時 myActivities 已是最新的
+      await loadEvents();
       
+    
       // Update UI button on detail page explicitly
       if (currentDetailId === cancelTargetId) {
           const btn = document.getElementById('regBtn');
@@ -374,7 +375,9 @@ async function doLogin() {
     currentRole = selectedAuthRole;
     
     closeAuth();
-    if (currentRole === 'admin' || currentUser.role === 'Organizer' || currentUser.role === 'Admin') {
+    
+    // 前端選 admin 且資料庫角色也是 Organizer/Admin，才進管理後台
+    if (currentRole === 'admin' && (currentUser.role === 'Organizer' || currentUser.role === 'Admin')) { 
       showAdminInterface();
     } else {
       showUserInterface();
@@ -955,7 +958,7 @@ function closeDeleteModal() {
   deleteTargetId = null;
 }
 
-function confirmDeleteActivity() {
+async function confirmDeleteActivity() {
   if (deleteTargetId === null) return;
   const a = ACTS.find(x => x.id === deleteTargetId);
   ACTS = ACTS.filter(x => x.id !== deleteTargetId);
@@ -967,7 +970,7 @@ function confirmDeleteActivity() {
   deleteTargetId = null;
   renderAdminDashboard();
   renderAdminRegistrations();
-  renderCards();
+  await loadEvents();
 }
 
 // =================== ADMIN: SUCCESS MODAL ===================
@@ -1069,7 +1072,7 @@ async function loadEvents() {
     
     // Convert API data to matching ACTS structure
     ACTS = data.map(d => ({
-      id: d.id,
+      id: Number(d.id),
       emoji: '📅', // default emoji since backend doesn't have it
       color: 'blue', // default color
       title: d.title,
