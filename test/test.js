@@ -400,23 +400,27 @@ async function doRegister() {
   const email = document.getElementById('rEmail').value.trim();
   const dept  = document.getElementById('rDept').value.trim();
   
-  if (!account || !name || !email) return alert('請至少填寫帳號與 Email');
+  // === 1. 修改這裡：去抓取 HTML 畫面上密碼輸入框的值 ===
+  // 這裡假設你的密碼輸入框 id 是 'rPw'（如果不是，請改成你 HTML 裡設定的 id）
+  const pw = document.getElementById('rPw').value.trim(); 
 
   try {
-    // 您可以在前端另外新增一個 pw 欄位，這裏暫時將 pw 設為預設值或同帳號
-    const pw = account; 
+    // === 2. 把原本的 const pw = account; 這行刪除或註解掉 ===
+    // 原本的：const pw = account; <-- 刪掉這一行
     
-    // We register with the specific API format for /api/register_user 
+    // 這樣這裡送出的 pw 就會是畫面上輸入的 123456 了
     const res = await fetch(`${API_BASE}/register_user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: email, pw: pw, role: selectedAuthRole })
     });
+    
     const data = await res.json();
     if (!res.ok) {
         alert(data.error || '註冊失敗');
         return;
     }
+    // ... 後續原本的程式碼 ...
 
     // Because the old UI uses the register button to directly login:
     currentUser = { id: account, name, phone, email, dept };

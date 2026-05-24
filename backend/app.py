@@ -1,6 +1,7 @@
 import os
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 from db_config import get_db_connection
 import sqlite3
 
@@ -207,30 +208,33 @@ def update_user_profile():
         conn.close()
 
 # 6. 使用者登入
+# 6. 使用者登入
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     account = data.get('id')
     password = data.get('pw')
-    role = data.get('role')
     
     conn = get_db_connection()
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        # 我們直接使用 email 當作帳號來搜尋
         cursor.execute("SELECT * FROM User WHERE email = ?", (account,))
         user = cursor.fetchone()
         
         if user:
-            # 簡單密碼比對 (這邊先不特別做複雜加密校驗，若原本資料庫有存密碼，您後續可以補上 bcrypt 或相應邏輯)
-            if user['password'] == password:
+            # ========================================================
+            # 放入這裡：觀察資料庫讀出來的密碼，跟前端這次輸入的密碼
+            # ========================================================
+            # ========================================================
+            
+            if check_password_hash(user['password'], password):
                 user_dict = dict(user)
                 return jsonify({
                     "success": True, 
                     "user": {
-                        "id": user_dict['email'],      # 帳號為 email
-                        "id_db": user_dict['user_id'], # 實際 DB 的 PK
+                        "id": user_dict['email'],      
+                        "id_db": user_dict['user_id'], 
                         "name": user_dict['name'],
                         "phone": user_dict['phone'],
                         "email": user_dict['email'],
@@ -243,13 +247,16 @@ def login():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
-
 # 7. 使用者註冊
 @app.route('/api/register_user', methods=['POST'])
 def register_user():
     data = request.json
     account = data.get('id')  # 帳號為 email
     password = data.get('pw')
+    
+    # 這裡成功產生了安全的雜湊密碼
+    hashed_password = generate_password_hash(password)
+    
     role = data.get('role')
     
     conn = get_db_connection()
@@ -266,8 +273,9 @@ def register_user():
             INSERT INTO User (email, password, role, name, department, phone)
             VALUES (?, ?, ?, ?, ?, ?)
         """
-        # 初次註冊先塞入簡單名稱與預設資料，使用者後續可以在設定裡面編輯
-        cursor.execute(query, (account, password, real_role, "新使用者", "未設定", ""))
+        # === 核心修正點 ===
+        # 這裡的第二個參數必須帶入 剛剛加密好的 hashed_password，而不是原始的 password
+        cursor.execute(query, (account, hashed_password, real_role, "新使用者", "未設定", ""))
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
@@ -275,7 +283,6 @@ def register_user():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
-
 # 8. 取得特定活動的報名名單 (供管理員使用)
 @app.route('/api/registrations', methods=['GET'])
 def get_all_registrations():
