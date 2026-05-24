@@ -379,6 +379,7 @@ async function doLogin() {
     } else {
       showUserInterface();
       renderProfile();
+      await loadMyActivities();
       // Load user registered events if API supports it
       // myActivities = [] or load from db
       if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
@@ -551,20 +552,57 @@ function logout() {
   currentRole = null;
   profileEditing = false;
   myActivities = [];
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
   showUserInterface();
   renderProfile();
   switchTab(0);
 }
 
 // =================== BANNER ===================
-document.getElementById('bannerScroll').addEventListener('scroll', () => {
-  const el = document.getElementById('bannerScroll');
-  const idx = Math.round(el.scrollLeft / (el.firstElementChild?.offsetWidth + 12 || 252));
-  ['d0','d1','d2'].forEach((d, i) => { document.getElementById(d).className = i === idx ? 'on' : ''; });
-});
+const BANNER_LABELS = ['🔥 熱門', '🎨 新上架', '🎵 限量'];
+const BANNER_GRADIENTS = [
+  'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
+  'linear-gradient(135deg, #025E73 0%, #F2EBEB 100%)',
+  'linear-gradient(135deg, #2EA69A 0%, #F2EBEB 100%)',
+];
 
 let bannerIndex = 0;
 let bannerTimer = null;
+
+function renderBanner() {
+  const scroll = document.getElementById('bannerScroll');
+  const dotWrap = document.querySelector('.banner-dot');
+  if (!scroll || ACTS.length === 0) return;
+
+  const items = ACTS.slice(0, 3);
+
+  scroll.innerHTML = items.map((a, i) => `
+    <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
+      <div class="label">${BANNER_LABELS[i] || '📅 活動'}</div>
+      <div class="people">${a.quota} / ${a.max} 人</div>
+      <div class="title">${a.title}</div>
+    </div>
+  `).join('');
+
+  dotWrap.innerHTML = items.map((_, i) =>
+    `<span id="d${i}" class="${i === 0 ? 'on' : ''}"></span>`
+  ).join('');
+
+  bannerIndex = 0;
+  scroll.scrollLeft = 0;
+  scroll.removeEventListener('scroll', onBannerScroll);
+  scroll.addEventListener('scroll', onBannerScroll);
+  clearInterval(bannerTimer);
+  startBannerAuto();
+}
+
+function onBannerScroll() {
+  const el = document.getElementById('bannerScroll');
+  const idx = Math.round(el.scrollLeft / (el.firstElementChild?.offsetWidth + 12 || 252));
+  updateDots(idx);
+  bannerIndex = idx;
+}
 
 function getBannerWidth() {
   const el = document.getElementById('bannerScroll');
@@ -572,7 +610,9 @@ function getBannerWidth() {
 }
 
 function updateDots(index) {
-  ['d0','d1','d2'].forEach((id, i) => document.getElementById(id).classList.toggle('on', i === index));
+  document.querySelectorAll('.banner-dot span').forEach((dot, i) =>
+    dot.classList.toggle('on', i === index)
+  );
 }
 
 function moveBanner(index) {
@@ -583,13 +623,16 @@ function moveBanner(index) {
 
 function nextBanner() {
   const el = document.getElementById('bannerScroll');
+  if (!el.children.length) return;
   bannerIndex = (bannerIndex + 1) % el.children.length;
   moveBanner(bannerIndex);
 }
 
-function startBannerAuto() { bannerTimer = setInterval(nextBanner, 3000); }
+function startBannerAuto() {
+  clearInterval(bannerTimer);
+  bannerTimer = setInterval(nextBanner, 3000);
+}
 
-startBannerAuto();
 const banner = document.getElementById('bannerScroll');
 banner.addEventListener('touchstart', () => clearInterval(bannerTimer));
 banner.addEventListener('mouseenter', () => clearInterval(bannerTimer));
@@ -771,17 +814,22 @@ async function loadAllRegistrations() {
   try {
     const res = await fetch(`${API_BASE}/registrations`);
     if (!res.ok) throw new Error('API config err');
+
     const data = await res.json();
-    
-    // 更新全域 REGISTRATIONS 為後端資料
-    for(let k in Object.keys(REGISTRATIONS)) delete REGISTRATIONS[k];
-    Object.assign(REGISTRATIONS, data);
-    
-    if (document.getElementById('admin-screen-registrations').classList.contains('active')) {
-      renderAdminRegistrations();
-    }
+
+    // 清空舊資料
+    Object.keys(REGISTRATIONS).forEach(k => delete REGISTRATIONS[k]);
+
+    // 重新整理資料
+    Object.entries(data).forEach(([k, v]) => {
+      REGISTRATIONS[Number(k)] = v.map(r => ({
+        ...r,
+        meal: (r.meal && r.meal.includes('素')) ? 'veg' : 'meat'
+      }));
+    });
+
   } catch (error) {
-    console.error('Failed to load registrations:', error);
+    console.error('loadAllRegistrations error:', error);
   }
 }
 
@@ -1032,8 +1080,11 @@ async function loadEvents() {
       max: d.student_capacity + d.max,
       desc: '' // backend currently has no desc
     }));
+  
     
     renderCards();
+    renderBanner();
+
     if (currentRole === 'admin') {
       renderAdminDashboard();
     }
