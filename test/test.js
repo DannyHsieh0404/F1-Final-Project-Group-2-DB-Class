@@ -71,10 +71,11 @@ function showUserInterface() {
   document.getElementById('adminApp').style.display = 'none';
 }
 
-function showAdminInterface() {
+async function showAdminInterface() {
   document.getElementById('userApp').style.display = 'none';
   document.getElementById('adminApp').style.display = 'contents';
   renderAdminNav();
+  await loadAllRegistrations(); // ← 加這行，進後台就先把報名資料撈進來
   renderAdminDashboard();
   renderAdminRegistrations();
   renderAdminProfile();
@@ -202,7 +203,7 @@ async function loadMyActivities() {
     if (!res.ok) throw new Error('Failed to load my activities');
     const data = await res.json();
     myActivities = data.map(d => ({
-      id: d.id,
+      id: Number(d.id),
       title: d.title,
       emoji: '📅', // default emoji since backend doesn't have it
       color: 'blue', // default color
@@ -242,10 +243,9 @@ async function submitReg() {
       document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
       document.getElementById('successModal').classList.add('open');
       
-      // refresh events to update quota
-      await loadEvents();
-      // refresh my activities
       await loadMyActivities();
+      await loadEvents();
+      
       
       // Update UI button on detail page explicitly
       const btn = document.getElementById('regBtn');
@@ -302,11 +302,12 @@ async function confirmCancel() {
       document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
       document.getElementById('cancelSuccessModal').classList.add('open');
       
-      // refresh events to update quota
-      await loadEvents();
-      // refresh my activities
+      // 先更新 myActivities，renderCards() 才能正確判斷 reg 是否存在
       await loadMyActivities();
+      // 再 loadEvents，裡面會呼叫 renderCards()，此時 myActivities 已是最新的
+      await loadEvents();
       
+    
       // Update UI button on detail page explicitly
       if (currentDetailId === cancelTargetId) {
           const btn = document.getElementById('regBtn');
@@ -374,11 +375,14 @@ async function doLogin() {
     currentRole = selectedAuthRole;
     
     closeAuth();
-    if (currentRole === 'admin' || currentUser.role === 'Organizer' || currentUser.role === 'Admin') {
+    
+    // 前端選 admin 且資料庫角色也是 Organizer/Admin，才進管理後台
+    if (currentRole === 'admin' && (currentUser.role === 'Organizer' || currentUser.role === 'Admin')) { 
       showAdminInterface();
     } else {
       showUserInterface();
       renderProfile();
+      await loadMyActivities();
       // Load user registered events if API supports it
       // myActivities = [] or load from db
       if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
@@ -551,20 +555,57 @@ function logout() {
   currentRole = null;
   profileEditing = false;
   myActivities = [];
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
   showUserInterface();
   renderProfile();
   switchTab(0);
 }
 
 // =================== BANNER ===================
-document.getElementById('bannerScroll').addEventListener('scroll', () => {
-  const el = document.getElementById('bannerScroll');
-  const idx = Math.round(el.scrollLeft / (el.firstElementChild?.offsetWidth + 12 || 252));
-  ['d0','d1','d2'].forEach((d, i) => { document.getElementById(d).className = i === idx ? 'on' : ''; });
-});
+const BANNER_LABELS = ['🔥 熱門', '🎨 新上架', '🎵 限量'];
+const BANNER_GRADIENTS = [
+  'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
+  'linear-gradient(135deg, #025E73 0%, #F2EBEB 100%)',
+  'linear-gradient(135deg, #2EA69A 0%, #F2EBEB 100%)',
+];
 
 let bannerIndex = 0;
 let bannerTimer = null;
+
+function renderBanner() {
+  const scroll = document.getElementById('bannerScroll');
+  const dotWrap = document.querySelector('.banner-dot');
+  if (!scroll || ACTS.length === 0) return;
+
+  const items = ACTS.slice(0, 3);
+
+  scroll.innerHTML = items.map((a, i) => `
+    <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
+      <div class="label">${BANNER_LABELS[i] || '📅 活動'}</div>
+      <div class="people">${a.quota} / ${a.max} 人</div>
+      <div class="title">${a.title}</div>
+    </div>
+  `).join('');
+
+  dotWrap.innerHTML = items.map((_, i) =>
+    `<span id="d${i}" class="${i === 0 ? 'on' : ''}"></span>`
+  ).join('');
+
+  bannerIndex = 0;
+  scroll.scrollLeft = 0;
+  scroll.removeEventListener('scroll', onBannerScroll);
+  scroll.addEventListener('scroll', onBannerScroll);
+  clearInterval(bannerTimer);
+  startBannerAuto();
+}
+
+function onBannerScroll() {
+  const el = document.getElementById('bannerScroll');
+  const idx = Math.round(el.scrollLeft / (el.firstElementChild?.offsetWidth + 12 || 252));
+  updateDots(idx);
+  bannerIndex = idx;
+}
 
 function getBannerWidth() {
   const el = document.getElementById('bannerScroll');
@@ -572,7 +613,9 @@ function getBannerWidth() {
 }
 
 function updateDots(index) {
-  ['d0','d1','d2'].forEach((id, i) => document.getElementById(id).classList.toggle('on', i === index));
+  document.querySelectorAll('.banner-dot span').forEach((dot, i) =>
+    dot.classList.toggle('on', i === index)
+  );
 }
 
 function moveBanner(index) {
@@ -583,13 +626,16 @@ function moveBanner(index) {
 
 function nextBanner() {
   const el = document.getElementById('bannerScroll');
+  if (!el.children.length) return;
   bannerIndex = (bannerIndex + 1) % el.children.length;
   moveBanner(bannerIndex);
 }
 
-function startBannerAuto() { bannerTimer = setInterval(nextBanner, 3000); }
+function startBannerAuto() {
+  clearInterval(bannerTimer);
+  bannerTimer = setInterval(nextBanner, 3000);
+}
 
-startBannerAuto();
 const banner = document.getElementById('bannerScroll');
 banner.addEventListener('touchstart', () => clearInterval(bannerTimer));
 banner.addEventListener('mouseenter', () => clearInterval(bannerTimer));
@@ -771,17 +817,22 @@ async function loadAllRegistrations() {
   try {
     const res = await fetch(`${API_BASE}/registrations`);
     if (!res.ok) throw new Error('API config err');
+
     const data = await res.json();
-    
-    // 更新全域 REGISTRATIONS 為後端資料
-    for(let k in Object.keys(REGISTRATIONS)) delete REGISTRATIONS[k];
-    Object.assign(REGISTRATIONS, data);
-    
-    if (document.getElementById('admin-screen-registrations').classList.contains('active')) {
-      renderAdminRegistrations();
-    }
+
+    // 清空舊資料
+    Object.keys(REGISTRATIONS).forEach(k => delete REGISTRATIONS[k]);
+
+    // 重新整理資料
+    Object.entries(data).forEach(([k, v]) => {
+      REGISTRATIONS[Number(k)] = v.map(r => ({
+        ...r,
+        meal: (r.meal && r.meal.includes('素')) ? 'veg' : 'meat'
+      }));
+    });
+
   } catch (error) {
-    console.error('Failed to load registrations:', error);
+    console.error('loadAllRegistrations error:', error);
   }
 }
 
@@ -907,7 +958,7 @@ function closeDeleteModal() {
   deleteTargetId = null;
 }
 
-function confirmDeleteActivity() {
+async function confirmDeleteActivity() {
   if (deleteTargetId === null) return;
   const a = ACTS.find(x => x.id === deleteTargetId);
   ACTS = ACTS.filter(x => x.id !== deleteTargetId);
@@ -919,7 +970,7 @@ function confirmDeleteActivity() {
   deleteTargetId = null;
   renderAdminDashboard();
   renderAdminRegistrations();
-  renderCards();
+  await loadEvents();
 }
 
 // =================== ADMIN: SUCCESS MODAL ===================
@@ -1021,7 +1072,7 @@ async function loadEvents() {
     
     // Convert API data to matching ACTS structure
     ACTS = data.map(d => ({
-      id: d.id,
+      id: Number(d.id),
       emoji: '📅', // default emoji since backend doesn't have it
       color: 'blue', // default color
       title: d.title,
@@ -1032,8 +1083,11 @@ async function loadEvents() {
       max: d.student_capacity + d.max,
       desc: '' // backend currently has no desc
     }));
+  
     
     renderCards();
+    renderBanner();
+
     if (currentRole === 'admin') {
       renderAdminDashboard();
     }
