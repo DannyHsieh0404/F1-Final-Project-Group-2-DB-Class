@@ -23,11 +23,14 @@ CREATE TABLE Category (
     category_name TEXT NOT NULL UNIQUE
 );
 
--- 3. 建立 Event 表
+-- 3. 建立 Event 表 (已新增 description, emoji, color 欄位)
 CREATE TABLE Event (
     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
     category_id INTEGER,
     title TEXT NOT NULL,
+    description TEXT,                  -- 【新增】活動詳細描述
+    emoji TEXT DEFAULT '📅',            -- 【新增】活動圖示，預設為日曆
+    color TEXT DEFAULT 'blue',          -- 【新增】活動主題顏色，預設為藍色
     host_id TEXT NOT NULL,  
     department TEXT,
     event_day DATE NOT NULL,
