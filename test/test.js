@@ -405,14 +405,18 @@ async function doRegister() {
   const pw = document.getElementById('rPw').value.trim(); 
 
   try {
-    // === 2. 把原本的 const pw = account; 這行刪除或註解掉 ===
-    // 原本的：const pw = account; <-- 刪掉這一行
-    
-    // 這樣這裡送出的 pw 就會是畫面上輸入的 123456 了
     const res = await fetch(`${API_BASE}/register_user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: email, pw: pw, role: selectedAuthRole })
+      body: JSON.stringify({ 
+          id: account, 
+          pw: pw, 
+          role: selectedAuthRole,
+          name: name,
+          phone: phone,
+          email: email,
+          dept: dept
+      })
     });
     
     const data = await res.json();
@@ -420,18 +424,8 @@ async function doRegister() {
         alert(data.error || '註冊失敗');
         return;
     }
-    // ... 後續原本的程式碼 ...
 
-    // Because the old UI uses the register button to directly login:
-    currentUser = { id: account, name, phone, email, dept };
-    
-    // update backend with details immediately
-    await fetch(`${API_BASE}/user`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: email, name, phone, email, dept })
-    });
-
+    currentUser = { id: account, id_db: account, name, phone, email, dept };
     currentRole = selectedAuthRole;
 
     if (currentRole === 'admin') {

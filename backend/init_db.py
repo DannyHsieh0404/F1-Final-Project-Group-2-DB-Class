@@ -6,8 +6,8 @@ schema_path = os.path.join(os.path.dirname(__file__), '..', 'db', 'schema.sql')
 seed_path = os.path.join(os.path.dirname(__file__), '..', 'db', 'seed.sql')
 
 # 如果資料庫已存在就先刪除，重新建立最新的
-if os.path.exists(db_path):
-    os.remove(db_path)
+# if os.path.exists(db_path):
+#     os.remove(db_path)
 
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
