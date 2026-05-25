@@ -186,17 +186,17 @@ def update_user_profile():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+    # 【修正】拿掉不安全的 OR email = ?，統一只用唯一的 user_id (主鍵) 來做精準更新
         query = """
             UPDATE User 
             SET name = ?, phone = ?, email = ?, department = ?
-            WHERE email = ? OR user_id = ?
+            WHERE user_id = ?
         """
         cursor.execute(query, (
             data.get('name'), 
             data.get('phone'), 
             data.get('email'), 
             data.get('dept'), 
-            user_id,
             user_id
         ))
         conn.commit()
@@ -207,7 +207,6 @@ def update_user_profile():
     finally:
         conn.close()
 
-# 6. 使用者登入
 # 6. 使用者登入
 @app.route('/api/login', methods=['POST'])
 def login():
