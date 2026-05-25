@@ -8,14 +8,13 @@ DROP TABLE IF EXISTS User;
 
 -- 1. 建立 User 表
 CREATE TABLE User (
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT PRIMARY KEY, -- 放學號
     role TEXT CHECK(role IN ('Student', 'Organizer', 'Admin')) NOT NULL DEFAULT 'Student',
     password TEXT NOT NULL, 
     name TEXT NOT NULL,
-    department TEXT,
-    grade TEXT,
+    department TEXT, -- 系所單位
     email TEXT UNIQUE NOT NULL,
-    phone TEXT
+    phone TEXT -- 註冊時填寫的電話
 );
 
 -- 2. 建立 Category 表 
@@ -29,7 +28,7 @@ CREATE TABLE Event (
     event_id INTEGER PRIMARY KEY AUTOINCREMENT,
     category_id INTEGER,
     title TEXT NOT NULL,
-    host_id INTEGER NOT NULL,  
+    host_id TEXT NOT NULL,  
     department TEXT,
     event_day DATE NOT NULL,
     event_time TIME NOT NULL,
@@ -53,7 +52,7 @@ CREATE TABLE Meal_Option (
 CREATE TABLE Registration (
     registration_id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
     registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT CHECK(status IN ('Registered', 'Cancelled')) DEFAULT 'Registered',
     attendance_flag INTEGER DEFAULT 0, -- 0 for FALSE, 1 for TRUE

@@ -118,7 +118,7 @@ def register_event():
         conn.close()
 
 # 3. 取得「我的活動」(特定使用者的報名紀錄)
-@app.route('/api/my-activities/<int:user_id>', methods=['GET'])
+@app.route('/api/my-activities/<user_id>', methods=['GET'])
 def get_my_activities(user_id):
     conn = get_db_connection()
     try:
@@ -186,12 +186,11 @@ def update_user_profile():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-    # 【修正】拿掉不安全的 OR email = ?，統一只用唯一的 user_id (主鍵) 來做精準更新
+    # 【修正】統一只用唯一的 user_id 或 email 來做精準更新
         query = """
             UPDATE User 
             SET name = ?, phone = ?, email = ?, department = ?
-            WHERE email = ? OR user_id = ?
-            WHERE user_id = ?
+            WHERE user_id = ? OR email = ?
         """
         cursor.execute(query, (
             data.get('name'), 
@@ -206,7 +205,6 @@ def update_user_profile():
         conn.close()
 
 # 6. 使用者登入
-# 6. 使用者登入
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -217,21 +215,16 @@ def login():
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM User WHERE email = ?", (account,))
+        cursor.execute("SELECT * FROM User WHERE user_id = ?", (account,))
         user = cursor.fetchone()
 
         if user:
-            # ========================================================
-            # 放入這裡：觀察資料庫讀出來的密碼，跟前端這次輸入的密碼
-            # ========================================================
-            # ========================================================
-
             if check_password_hash(user['password'], password):
                 user_dict = dict(user)
                 return jsonify({
                     "success": True, 
                     "user": {
-                        "id": user_dict['email'],      
+                        "id": user_dict['user_id'],      
                         "id_db": user_dict['user_id'], 
                         "name": user_dict['name'],
                         "phone": user_dict['phone'],
@@ -249,31 +242,31 @@ def login():
 @app.route('/api/register_user', methods=['POST'])
 def register_user():
     data = request.json
-    account = data.get('id')  # 帳號為 email
+    user_id = data.get('id')  # 學號
     password = data.get('pw')
-
-    # 這裡成功產生了安全的雜湊密碼
-    hashed_password = generate_password_hash(password)
-
     role = data.get('role')
+    name = data.get('name', '新使用者')
+    phone = data.get('phone', '')
+    email = data.get('email', '')
+    dept = data.get('dept', '未設定')
+
+    hashed_password = generate_password_hash(password)
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         # 檢查是否已存在
-        cursor.execute("SELECT user_id FROM User WHERE email = ?", (account,))
+        cursor.execute("SELECT user_id FROM User WHERE user_id = ? OR email = ?", (user_id, email))
         if cursor.fetchone():
-            return jsonify({"error": "此帳號(Email)已被註冊"}), 400
+            return jsonify({"error": "此學號或Email已被註冊"}), 400
 
         real_role = 'Organizer' if role == 'admin' else 'Student'
 
         query = """
-            INSERT INTO User (email, password, role, name, department, phone)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO User (user_id, email, password, role, name, department, phone)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """
-        # === 核心修正點 ===
-        # 這裡的第二個參數必須帶入 剛剛加密好的 hashed_password，而不是原始的 password
-        cursor.execute(query, (account, hashed_password, real_role, "新使用者", "未設定", ""))
+        cursor.execute(query, (user_id, email, hashed_password, real_role, name, dept, phone))
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
@@ -292,7 +285,7 @@ def get_all_registrations():
         query = """
             SELECT 
                 r.event_id,
-                u.email as uid,
+                u.user_id as uid,
                 u.name,
                 u.department as dept,
                 d.dietary_req as meal
