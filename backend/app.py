@@ -204,14 +204,17 @@ def update_user_profile():
         conn.commit()
     finally:
         conn.close()
-
-# 6. 使用者登入
-# 6. 使用者登入
+# 6. 使用者登入 —— 已修正管理員權限未驗證漏洞
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    account = data.get('id')
-    password = data.get('pw')
+    account = data.get('id')      # 前端傳入的 Email
+    password = data.get('pw')     # 前端傳入的密碼
+    login_role = data.get('role') # 【新增】接收前端選擇的登入角色 (例如: 'admin' 或 'student')
+
+    # 安全檢查：確保必要參數都有傳入
+    if not account or not password or not login_role:
+        return jsonify({"error": "缺少帳號、密碼或角色資訊"}), 400
 
     conn = get_db_connection()
     try:
@@ -221,13 +224,21 @@ def login():
         user = cursor.fetchone()
 
         if user:
-            # ========================================================
-            # 放入這裡：觀察資料庫讀出來的密碼，跟前端這次輸入的密碼
-            # ========================================================
-            # ========================================================
-
+            # 1. 先驗證密碼雜湊是否正確
             if check_password_hash(user['password'], password):
                 user_dict = dict(user)
+                db_role = user_dict['role'] # 資料庫內真正的角色標籤：'Organizer' 或 'Student'
+
+                # 2. 【核心修正】將前端角色對齊資料庫的角色定義
+                # 依據註冊邏輯：前端傳 'admin' 代表想登入 'Organizer' 後台
+                expected_db_role = 'Organizer' if login_role == 'admin' else 'Student'
+
+                # 3. 【關鍵防禦】比對「他自稱的角色」與「資料庫真實角色」是否相符
+                if db_role != expected_db_role:
+                    # 帳密雖對，但角色不符！精準回傳 403 Forbidden 拒絕訪問
+                    return jsonify({"error": "權限不符，您無法以該角色身份登入"}), 403
+
+                # 4. 安全過關，允許登入
                 return jsonify({
                     "success": True, 
                     "user": {
@@ -237,9 +248,10 @@ def login():
                         "phone": user_dict['phone'],
                         "email": user_dict['email'],
                         "dept": user_dict['department'],
-                        "role": user_dict['role']
+                        "role": db_role
                     }
                 })
+                
         return jsonify({"error": "帳號或密碼錯誤"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
