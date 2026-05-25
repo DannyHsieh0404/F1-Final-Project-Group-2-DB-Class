@@ -34,7 +34,7 @@ def get_events():
         cursor = conn.cursor()
         # 查詢 Event 表，並帶出 Category 的名稱
         query = """
-            SELECT 
+            SELECT
                 e.event_id as id, 
                 c.category_name as tags,
                 e.title, 
@@ -335,6 +335,121 @@ def get_all_registrations():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+# ==========================================
+# 新增功能：管理員 後台「新增、編輯、刪除活動」API
+# ==========================================
 
+# 9. 新增活動 (POST /api/events)
+@app.route('/api/events', methods=['POST'])
+def create_event():
+    data = request.json
+    if not data:
+        return jsonify({"error": "缺少活動資料"}), 400
+
+    title = data.get('title')
+    category_id = data.get('category_id') or data.get('category')  # 支援前端傳來的 key 名稱
+    event_day = data.get('date')                                   # 前端通常傳 date
+    event_time = data.get('time')
+    location = data.get('loc') or data.get('location')
+    guest_capacity = data.get('max') or data.get('guest_capacity')
+    student_capacity = data.get('student_capacity', guest_capacity) # 若沒傳則同步
+    
+    # 預留未來資料庫增欄的視覺與描述欄位（若前端有傳就寫入，沒傳就給空字串或預設）
+    description = data.get('description', '')
+    emoji = data.get('emoji', '📅')
+    color = data.get('color', '#4f46e5')
+
+    if not title:
+        return jsonify({"error": "活動標題為必填項目"}), 400
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 這裡的 SQL 欄位順序會依據你們 Event 表的結構調整。
+        query = """
+            INSERT INTO Event (category_id, title, description, emoji, color, event_day, event_time, location, guest_capacity, student_capacity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(query, (category_id, title, description, emoji, color, event_day, event_time, location, guest_capacity, student_capacity))
+        conn.commit()
+        return jsonify({"success": True, "message": "活動新增成功！", "event_id": cursor.lastrowid})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+# 10. 編輯活動 (PUT /api/events/<int:event_id>)
+@app.route('/api/events/<int:event_id>', methods=['PUT'])
+def update_event(event_id):
+    data = request.json
+    if not data:
+        return jsonify({"error": "缺少修改資料"}), 400
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 先檢查活動是否存在
+        cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
+        if not cursor.fetchone():
+            return jsonify({"error": "找不到該活動，無法修改"}), 404
+
+        # 這裡同樣預留了 description, emoji, color 的更新
+        query = """
+            UPDATE Event 
+            SET category_id = ?, title = ?, description = ?, emoji = ?, color = ?, 
+                event_day = ?, event_time = ?, location = ?, guest_capacity = ?, student_capacity = ?
+            WHERE event_id = ?
+        """
+        cursor.execute(query, (
+            data.get('category_id') or data.get('category'),
+            data.get('title'),
+            data.get('description', ''),
+            data.get('emoji', '📅'),
+            data.get('color', '#4f46e5'),
+            data.get('date'),
+            data.get('time'),
+            data.get('loc') or data.get('location'),
+            data.get('max') or data.get('guest_capacity'),
+            data.get('student_capacity'),
+            event_id
+        ))
+        conn.commit()
+        return jsonify({"success": True, "message": "活動修改成功！"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+# 11. 刪除活動 (DELETE /api/events/<int:event_id>)
+@app.route('/api/events/<int:event_id>', methods=['DELETE'])
+def delete_event(event_id):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 先檢查活動是否存在
+        cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
+        if not cursor.fetchone():
+            return jsonify({"error": "找不到該活動，無法刪除"}), 404
+
+        # 1. 先刪除（或取消）該活動關聯的報名紀錄，避免外鍵衝突造成資料庫報錯
+        cursor.execute("DELETE FROM Registration WHERE event_id = ?", (event_id,))
+        
+        # 2. 真正刪除活動本體
+        cursor.execute("DELETE FROM Event WHERE event_id = ?", (event_id,))
+        
+        conn.commit()
+        return jsonify({"success": True, "message": "活動已成功刪除！"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
