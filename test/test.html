@@ -25,28 +25,10 @@
           <p>找到屬於你的精彩體驗</p>
         </div>
         <div class="banner-wrap">
-          <div class="banner-scroll" id="bannerScroll">
-            <div class="banner-card" onclick="openDetail(0)">
-              <div class="label">🔥 熱門</div>
-              <div class="people">128 / 200 人</div>
-              <div class="title">2025 校際籃球錦標賽</div>
-            </div>
-            <div class="banner-card" onclick="openDetail(1)">
-              <div class="label">🎨 新上架</div>
-              <div class="people">45 / 80 人</div>
-              <div class="title">陶藝創作工作坊</div>
-            </div>
-            <div class="banner-card" onclick="openDetail(2)">
-              <div class="label">🎵 限量</div>
-              <div class="people">67 / 70 人</div>
-              <div class="title">爵士之夜音樂節</div>
-            </div>
-          </div>
-          <div class="banner-dot">
-            <span class="on" id="d0"></span>
-            <span id="d1"></span>
-            <span id="d2"></span>
-          </div>
+
+          <div class="banner-scroll" id="bannerScroll"></div>
+          <div class="banner-dot"></div>
+          
         </div>
         <div class="section-title">所有活動</div>
         <div class="activity-list"></div>
@@ -262,7 +244,7 @@
           <input type="text" placeholder="地點" id="af_loc" style="flex:1">
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="number" placeholder="報名人數" id="af_quota" min="0" style="flex:1">
+          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="已報名人數由系統自動計算">
           <input type="number" placeholder="總名額" id="af_max" min="1" style="flex:1">
         </div>
         <div style="display:flex;gap:8px">

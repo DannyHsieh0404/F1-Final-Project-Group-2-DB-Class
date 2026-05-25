@@ -204,6 +204,7 @@ def update_user_profile():
         conn.commit()
     finally:
         conn.close()
+<<<<<<< HEAD
 # 6. 使用者登入 —— 已修正管理員權限未驗證漏洞
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -215,6 +216,16 @@ def login():
     # 安全檢查：確保必要參數都有傳入
     if not account or not password or not login_role:
         return jsonify({"error": "缺少帳號、密碼或角色資訊"}), 400
+=======
+
+# 6. 使用者登入
+# 6. 使用者登入
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    account = data.get('id')
+    password = data.get('pw')
+>>>>>>> 97febc57db8f6b4ebdffc61d7efd351e7266f867
 
     conn = get_db_connection()
     try:
@@ -224,6 +235,7 @@ def login():
         user = cursor.fetchone()
 
         if user:
+<<<<<<< HEAD
             # 1. 先驗證密碼雜湊是否正確
             if check_password_hash(user['password'], password):
                 user_dict = dict(user)
@@ -239,6 +251,15 @@ def login():
                     return jsonify({"error": "權限不符，您無法以該角色身份登入"}), 403
 
                 # 4. 安全過關，允許登入
+=======
+            # ========================================================
+            # 放入這裡：觀察資料庫讀出來的密碼，跟前端這次輸入的密碼
+            # ========================================================
+            # ========================================================
+
+            if check_password_hash(user['password'], password):
+                user_dict = dict(user)
+>>>>>>> 97febc57db8f6b4ebdffc61d7efd351e7266f867
                 return jsonify({
                     "success": True, 
                     "user": {
@@ -248,10 +269,16 @@ def login():
                         "phone": user_dict['phone'],
                         "email": user_dict['email'],
                         "dept": user_dict['department'],
+<<<<<<< HEAD
                         "role": db_role
                     }
                 })
                 
+=======
+                        "role": user_dict['role']
+                    }
+                })
+>>>>>>> 97febc57db8f6b4ebdffc61d7efd351e7266f867
         return jsonify({"error": "帳號或密碼錯誤"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
