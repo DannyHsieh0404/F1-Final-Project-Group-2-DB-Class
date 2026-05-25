@@ -28,7 +28,7 @@ def get_events():
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "Database connection failed"}), 500
-    
+
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -50,13 +50,13 @@ def get_events():
         cursor.execute(query)
         # 將資料轉為字典格式
         events = [dict(row) for row in cursor.fetchall()]
-        
+
         # 轉換日期
         for event in events:
             if event['date']:
                 # SQLite 存出來是字串，可以直接處理（如果格式是 YYYY-MM-DD，轉成 YYYY/MM/DD）
                 event['date'] = str(event['date']).replace('-', '/')
-                
+
         return jsonify(events)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -70,30 +70,30 @@ def register_event():
     user_id = data.get('user_id')
     event_id = data.get('event_id')
     dietary_req = data.get('dietary_req', None)
-    
+
     if not user_id or not event_id:
         return jsonify({"error": "Missing user_id or event_id"}), 400
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        
+
         # 1. 先確認是否曾經報名過
         cursor.execute("SELECT registration_id, status FROM Registration WHERE event_id = ? AND user_id = ?", (event_id, user_id))
         existing_reg = cursor.fetchone()
-        
+
         if existing_reg:
             registration_id, current_status = existing_reg
             # 1-1. 如果已經是報名狀態
             if current_status == 'Registered':
                 return jsonify({"error": "您已經報名過這個活動了"}), 400
-            
+
             # 1-2. 如果是 Cancelled 狀態，將其恢復為 Registered，並更新時間 (使用 localtime 修正台灣時區)
             cursor.execute("UPDATE Registration SET status = 'Registered', registration_date = datetime('now', 'localtime') WHERE registration_id = ?", (registration_id,))
-            
+
             # 清除舊的飲食需求
             cursor.execute("DELETE FROM Dietary_Req WHERE registration_id = ?", (registration_id,))
-            
+
         else:
             # 2. 若完全沒報名過，走一般插入流程 (加上 localtime 修正台灣時區)
             query_reg = """
@@ -102,15 +102,15 @@ def register_event():
             """
             cursor.execute(query_reg, (event_id, user_id))
             registration_id = cursor.lastrowid # 取得剛剛產生的 PK
-        
+
         # 若有飲食需求，統一寫入
         if dietary_req:
             query_diet = "INSERT INTO Dietary_Req (registration_id, dietary_req) VALUES (?, ?)"
             cursor.execute(query_diet, (registration_id, dietary_req))
-            
+
         conn.commit()
         return jsonify({"success": True, "message": "報名成功！", "registration_id": registration_id})
-        
+
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
@@ -139,11 +139,11 @@ def get_my_activities(user_id):
         """
         cursor.execute(query, (user_id,))
         activities = [dict(row) for row in cursor.fetchall()]
-        
+
         for act in activities:
             if act['date']:
                 act['date'] = str(act['date']).replace('-', '/')
-                
+
         return jsonify(activities)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -156,7 +156,7 @@ def cancel_event():
     data = request.json
     user_id = data.get('user_id')
     event_id = data.get('event_id')
-    
+
     if not user_id or not event_id:
         return jsonify({"error": "Missing parameters"}), 400
 
@@ -179,7 +179,7 @@ def update_user_profile():
     data = request.json
     # 支援前端傳來的 'id' 或 'id_db' 作為 user_id
     user_id = data.get('id_db') or data.get('id')
-    
+
     if not user_id:
         return jsonify({"error": "Missing user_id"}), 400
 
@@ -190,6 +190,7 @@ def update_user_profile():
         query = """
             UPDATE User 
             SET name = ?, phone = ?, email = ?, department = ?
+            WHERE email = ? OR user_id = ?
             WHERE user_id = ?
         """
         cursor.execute(query, (
@@ -197,49 +198,36 @@ def update_user_profile():
             data.get('phone'), 
             data.get('email'), 
             data.get('dept'), 
+            user_id,
             user_id
         ))
         conn.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
 
-# 6. 使用者登入 —— 已修正管理員權限未驗證漏洞
+# 6. 使用者登入
+# 6. 使用者登入
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    account = data.get('id')      # 帳號（Email）
-    password = data.get('pw')     # 密碼
-    login_role = data.get('role') # 【新增】接收前端傳來的目標登入角色（例如：'admin' 或 'student'）
-    
-    if not account or not password or not login_role:
-        return jsonify({"error": "缺少帳號、密碼或角色資訊"}), 400
-        
+    account = data.get('id')
+    password = data.get('pw')
+
     conn = get_db_connection()
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM User WHERE email = ?", (account,))
         user = cursor.fetchone()
-        
+
         if user:
-            # 1. 先驗證密碼是否正確
+            # ========================================================
+            # 放入這裡：觀察資料庫讀出來的密碼，跟前端這次輸入的密碼
+            # ========================================================
+            # ========================================================
+
             if check_password_hash(user['password'], password):
                 user_dict = dict(user)
-                db_role = user_dict['role'] # 資料庫真實角色：'Organizer' 或 'Student'
-                
-                # 2. 【核心修正】對應前端與資料庫的角色標籤
-                # 依據註冊邏輯：'admin' 對應 'Organizer'；其餘對應 'Student'
-                expected_db_role = 'Organizer' if login_role == 'admin' else 'Student'
-                
-                # 3. 【關鍵防禦】檢查真實角色與預期角色是否相符
-                if db_role != expected_db_role:
-                    return jsonify({"error": "權限不符，您無法以該角色身份登入"}), 403
-                
-                # 4. 驗證全數通過，允許登入並回傳資料
                 return jsonify({
                     "success": True, 
                     "user": {
@@ -249,10 +237,9 @@ def login():
                         "phone": user_dict['phone'],
                         "email": user_dict['email'],
                         "dept": user_dict['department'],
-                        "role": db_role
+                        "role": user_dict['role']
                     }
                 })
-                
         return jsonify({"error": "帳號或密碼錯誤"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -264,12 +251,12 @@ def register_user():
     data = request.json
     account = data.get('id')  # 帳號為 email
     password = data.get('pw')
-    
+
     # 這裡成功產生了安全的雜湊密碼
     hashed_password = generate_password_hash(password)
-    
+
     role = data.get('role')
-    
+
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -277,9 +264,9 @@ def register_user():
         cursor.execute("SELECT user_id FROM User WHERE email = ?", (account,))
         if cursor.fetchone():
             return jsonify({"error": "此帳號(Email)已被註冊"}), 400
-            
+
         real_role = 'Organizer' if role == 'admin' else 'Student'
-        
+
         query = """
             INSERT INTO User (email, password, role, name, department, phone)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -316,7 +303,7 @@ def get_all_registrations():
         """
         cursor.execute(query)
         rows = [dict(row) for row in cursor.fetchall()]
-        
+
         # 整理成以 event_id 為 key 的字典
         regs_dict = {}
         for row in rows:
@@ -324,7 +311,7 @@ def get_all_registrations():
             if eid not in regs_dict:
                 regs_dict[eid] = []
             regs_dict[eid].append(row)
-            
+
         return jsonify(regs_dict)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
