@@ -2,9 +2,6 @@
 const API_BASE = 'http://127.0.0.1:5000/api';
 
 let ACTS = [];
-const API_BASE = 'http://127.0.0.1:5000/api';
-
-let ACTS = [];
 
 // Simulate registration records per activity (mock data)
 const REGISTRATIONS = {
@@ -75,11 +72,9 @@ function showUserInterface() {
 }
 
 async function showAdminInterface() {
-async function showAdminInterface() {
   document.getElementById('userApp').style.display = 'none';
   document.getElementById('adminApp').style.display = 'contents';
   renderAdminNav();
-  await loadAllRegistrations(); // ← 加這行，進後台就先把報名資料撈進來
   await loadAllRegistrations(); // ← 加這行，進後台就先把報名資料撈進來
   renderAdminDashboard();
   renderAdminRegistrations();
@@ -106,9 +101,6 @@ function switchAdminTab(i) {
   adminScreens.forEach((s, idx) => document.getElementById(s).classList.toggle('active', idx === i));
   adminNavs.forEach((n, idx) => document.getElementById(n).classList.toggle('active', idx === i));
   if (i === 0) renderAdminDashboard();
-  if (i === 1) {
-      loadAllRegistrations(); // load details dynamically from backend when switching tabs
-  }
   if (i === 1) {
       loadAllRegistrations(); // load details dynamically from backend when switching tabs
   }
@@ -229,65 +221,7 @@ async function loadMyActivities() {
 }
 
 async function submitReg() {
-async function loadMyActivities() {
-  if (!currentUser || !currentUser.id_db) return;
-  try {
-    const res = await fetch(`${API_BASE}/my-activities/${currentUser.id_db}`);
-    if (!res.ok) throw new Error('Failed to load my activities');
-    const data = await res.json();
-    myActivities = data.map(d => ({
-      id: Number(d.id),
-      title: d.title,
-      emoji: '📅', // default emoji since backend doesn't have it
-      color: 'blue', // default color
-      date: d.date,
-      meal: d.dietary_req || null
-    }));
-    
-    // 如果你在「我的活動」分頁，要重新 render
-    if (document.getElementById('screen-mine').classList.contains('active')) {
-      renderMine();
-    }
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-async function submitReg() {
   const a = ACTS.find(x => x.id === currentDetailId);
-
-  try {
-      const res = await fetch(`${API_BASE}/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-              user_id: currentUser.id_db, 
-              event_id: a.id, 
-              dietary_req: selectedMeal 
-          })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-          alert(data.error || '報名失敗');
-          return;
-      }
-      
-      document.getElementById('mealModal').classList.remove('open');
-      document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
-      document.getElementById('successModal').classList.add('open');
-      
-      await loadMyActivities();
-      await loadEvents();
-      
-      
-      // Update UI button on detail page explicitly
-      const btn = document.getElementById('regBtn');
-      btn.textContent = '✕ 取消報名'; btn.className = 'register-btn cancel';
-      document.getElementById('dQuota').textContent = ACTS.find(x => x.id === currentDetailId).quota;
-  } catch (e) {
-      console.error(e);
-      alert('發生錯誤');
-  }
 
   try {
       const res = await fetch(`${API_BASE}/register`, {
@@ -345,7 +279,6 @@ function closeCancelModal() {
 }
 
 async function confirmCancel() {
-async function confirmCancel() {
   if (cancelTargetId === null) return;
   const a = ACTS.find(x => x.id === cancelTargetId);
   
@@ -364,46 +297,7 @@ async function confirmCancel() {
           alert(data.error || '取消失敗');
           return;
       }
-  
-  try {
-      const res = await fetch(`${API_BASE}/cancel`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-              user_id: currentUser.id_db, 
-              event_id: a.id 
-          })
-      });
-      const data = await res.json();
-      
-      if (!res.ok) {
-          alert(data.error || '取消失敗');
-          return;
-      }
 
-      document.getElementById('cancelModal').classList.remove('open');
-      document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
-      document.getElementById('cancelSuccessModal').classList.add('open');
-      
-      // 先更新 myActivities，renderCards() 才能正確判斷 reg 是否存在
-      await loadMyActivities();
-      // 再 loadEvents，裡面會呼叫 renderCards()，此時 myActivities 已是最新的
-      await loadEvents();
-      
-    
-      // Update UI button on detail page explicitly
-      if (currentDetailId === cancelTargetId) {
-          const btn = document.getElementById('regBtn');
-          btn.textContent = '立即報名'; btn.className = 'register-btn'; btn.disabled = false;
-          // After loadEvents, ACTS is reloaded so we need to fetch a again to get new quota
-          const reloadedA = ACTS.find(x => x.id === cancelTargetId);
-          document.getElementById('dQuota').textContent = reloadedA ? reloadedA.quota : a.quota;
-      }
-  } catch (e) {
-      console.error(e);
-      alert('發生錯誤');
-  }
-  
       document.getElementById('cancelModal').classList.remove('open');
       document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
       document.getElementById('cancelSuccessModal').classList.add('open');
@@ -461,26 +355,10 @@ function switchAuthTab(tab) {
 }
 
 async function doLogin() {
-async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value.trim();
   if (!id || !pw) return alert('請填寫帳號與密碼');
 
-  try {
-    const res = await fetch(`${API_BASE}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, pw, role: selectedAuthRole })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || '登入失敗');
-      return;
-    }
-    
-    currentUser = data.user;
-    currentRole = selectedAuthRole;
-    
   try {
     const res = await fetch(`${API_BASE}/login`, {
       method: 'POST',
@@ -512,26 +390,9 @@ async function doLogin() {
   } catch(e) {
     console.error(e);
     alert('發生錯誤');
-    
-    // 前端選 admin 且資料庫角色也是 Organizer/Admin，才進管理後台
-    if (currentRole === 'admin' && (currentUser.role === 'Organizer' || currentUser.role === 'Admin')) { 
-      showAdminInterface();
-    } else {
-      showUserInterface();
-      renderProfile();
-      await loadMyActivities();
-      // Load user registered events if API supports it
-      // myActivities = [] or load from db
-      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
-    }
-  } catch(e) {
-    console.error(e);
-    alert('發生錯誤');
   }
 }
 
-async function doRegister() {
-  const account = document.getElementById('rId').value.trim();
 async function doRegister() {
   const account = document.getElementById('rId').value.trim();
   const name  = document.getElementById('rName').value.trim();
@@ -567,20 +428,6 @@ async function doRegister() {
     currentUser = { id: account, id_db: account, name, phone, email, dept };
     currentRole = selectedAuthRole;
 
-    if (currentRole === 'admin') {
-      const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
-      if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('管理員驗證碼錯誤（提示：nsysu2025）');
-      closeAuth();
-      showAdminInterface();
-    } else {
-      closeAuth();
-      showUserInterface();
-      renderProfile();
-      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
-    }
-  } catch(e) {
-    console.error(e);
-    alert('發生錯誤');
     if (currentRole === 'admin') {
       const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
       if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('管理員驗證碼錯誤（提示：nsysu2025）');
@@ -671,23 +518,10 @@ function renderFields() {
 }
 
 async function toggleProfileEdit() {
-async function toggleProfileEdit() {
   if (profileEditing) {
     FIELDS.forEach(f => { const inp = document.getElementById('fi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     profileEditing = false;
     document.getElementById('profileEditBtn').textContent = '編輯資料';
-    
-    // Save to database
-    try {
-        await fetch(`${API_BASE}/user`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentUser) 
-        });
-    } catch(e) {
-        console.error("更新失敗", e);
-    }
-
     
     // Save to database
     try {
@@ -721,20 +555,12 @@ function logout() {
   myActivities = [];
   document.getElementById('loginId').value = '';
   document.getElementById('loginPw').value = '';
-  document.getElementById('loginId').value = '';
-  document.getElementById('loginPw').value = '';
   showUserInterface();
   renderProfile();
   switchTab(0);
 }
 
 // =================== BANNER ===================
-const BANNER_LABELS = ['🔥 熱門', '🎨 新上架', '🎵 限量'];
-const BANNER_GRADIENTS = [
-  'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
-  'linear-gradient(135deg, #025E73 0%, #F2EBEB 100%)',
-  'linear-gradient(135deg, #2EA69A 0%, #F2EBEB 100%)',
-];
 const BANNER_LABELS = ['🔥 熱門', '🎨 新上架', '🎵 限量'];
 const BANNER_GRADIENTS = [
   'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
@@ -779,49 +605,12 @@ function onBannerScroll() {
   bannerIndex = idx;
 }
 
-function renderBanner() {
-  const scroll = document.getElementById('bannerScroll');
-  const dotWrap = document.querySelector('.banner-dot');
-  if (!scroll || ACTS.length === 0) return;
-
-  const items = ACTS.slice(0, 3);
-
-  scroll.innerHTML = items.map((a, i) => `
-    <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
-      <div class="label">${BANNER_LABELS[i] || '📅 活動'}</div>
-      <div class="people">${a.quota} / ${a.max} 人</div>
-      <div class="title">${a.title}</div>
-    </div>
-  `).join('');
-
-  dotWrap.innerHTML = items.map((_, i) =>
-    `<span id="d${i}" class="${i === 0 ? 'on' : ''}"></span>`
-  ).join('');
-
-  bannerIndex = 0;
-  scroll.scrollLeft = 0;
-  scroll.removeEventListener('scroll', onBannerScroll);
-  scroll.addEventListener('scroll', onBannerScroll);
-  clearInterval(bannerTimer);
-  startBannerAuto();
-}
-
-function onBannerScroll() {
-  const el = document.getElementById('bannerScroll');
-  const idx = Math.round(el.scrollLeft / (el.firstElementChild?.offsetWidth + 12 || 252));
-  updateDots(idx);
-  bannerIndex = idx;
-}
-
 function getBannerWidth() {
   const el = document.getElementById('bannerScroll');
   return el && el.firstElementChild ? el.firstElementChild.offsetWidth + 12 : 0;
 }
 
 function updateDots(index) {
-  document.querySelectorAll('.banner-dot span').forEach((dot, i) =>
-    dot.classList.toggle('on', i === index)
-  );
   document.querySelectorAll('.banner-dot span').forEach((dot, i) =>
     dot.classList.toggle('on', i === index)
   );
@@ -836,15 +625,10 @@ function moveBanner(index) {
 function nextBanner() {
   const el = document.getElementById('bannerScroll');
   if (!el.children.length) return;
-  if (!el.children.length) return;
   bannerIndex = (bannerIndex + 1) % el.children.length;
   moveBanner(bannerIndex);
 }
 
-function startBannerAuto() {
-  clearInterval(bannerTimer);
-  bannerTimer = setInterval(nextBanner, 3000);
-}
 function startBannerAuto() {
   clearInterval(bannerTimer);
   bannerTimer = setInterval(nextBanner, 3000);
@@ -1050,29 +834,6 @@ async function loadAllRegistrations() {
   }
 }
 
-async function loadAllRegistrations() {
-  try {
-    const res = await fetch(`${API_BASE}/registrations`);
-    if (!res.ok) throw new Error('API config err');
-
-    const data = await res.json();
-
-    // 清空舊資料
-    Object.keys(REGISTRATIONS).forEach(k => delete REGISTRATIONS[k]);
-
-    // 重新整理資料
-    Object.entries(data).forEach(([k, v]) => {
-      REGISTRATIONS[Number(k)] = v.map(r => ({
-        ...r,
-        meal: (r.meal && r.meal.includes('素')) ? 'veg' : 'meat'
-      }));
-    });
-
-  } catch (error) {
-    console.error('loadAllRegistrations error:', error);
-  }
-}
-
 function renderAdminRegistrations() {
   const el = document.getElementById('admin-reg-content');
   if (!el) return;
@@ -1196,7 +957,6 @@ function closeDeleteModal() {
 }
 
 async function confirmDeleteActivity() {
-async function confirmDeleteActivity() {
   if (deleteTargetId === null) return;
   const a = ACTS.find(x => x.id === deleteTargetId);
   ACTS = ACTS.filter(x => x.id !== deleteTargetId);
@@ -1208,7 +968,6 @@ async function confirmDeleteActivity() {
   deleteTargetId = null;
   renderAdminDashboard();
   renderAdminRegistrations();
-  await loadEvents();
   await loadEvents();
 }
 
@@ -1273,23 +1032,10 @@ function renderAdminFields() {
 }
 
 async function toggleAdminProfileEdit() {
-async function toggleAdminProfileEdit() {
   if (adminProfileEditing) {
     ADMIN_FIELDS.forEach(f => { const inp = document.getElementById('afi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     adminProfileEditing = false;
     document.getElementById('adminProfileEditBtn').textContent = '編輯資料';
-    
-    // Save to database
-    try {
-        await fetch(`${API_BASE}/user`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentUser) 
-        });
-    } catch(e) {
-        console.error("更新失敗", e);
-    }
-
     
     // Save to database
     try {
@@ -1315,41 +1061,6 @@ async function toggleAdminProfileEdit() {
   }
 }
 
-// =================== DATA FETCH ===================
-async function loadEvents() {
-  try {
-    const res = await fetch(`${API_BASE}/events`);
-    if (!res.ok) throw new Error('API response not ok');
-    const data = await res.json();
-    
-    // Convert API data to matching ACTS structure
-    ACTS = data.map(d => ({
-      id: Number(d.id),
-      emoji: '📅', // default emoji since backend doesn't have it
-      color: 'blue', // default color
-      title: d.title,
-      date: `${d.date} ${d.time}`,
-      loc: d.loc,
-      tags: d.tags ? [d.tags] : [],
-      quota: d.quota || 0,
-      max: d.student_capacity + d.max,
-      desc: '' // backend currently has no desc
-    }));
-  
-    
-    renderCards();
-    renderBanner();
-
-    if (currentRole === 'admin') {
-      renderAdminDashboard();
-    }
-  } catch (error) {
-    console.error('Failed to load events from DB:', error);
-  }
-}
-
-// =================== INIT ===================
-loadEvents();
 // =================== DATA FETCH ===================
 async function loadEvents() {
   try {

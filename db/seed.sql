@@ -1,11 +1,11 @@
 -- 插入 User 範例資料 (包含 Organizer, Student 等角色)
-<<<<<<< HEAD
+
 INSERT INTO User (user_id, role, password, name, department, email, phone) VALUES
 ('ADMIN01', 'Organizer', 'hashed_pw_admin1', 'Alice (Admin)', 'Information Management', 'alice@university.edu', '0912345678'),
 ('B10402001', 'Student', 'hashed_pw_student1', 'Bob (Student)', 'Computer Science', 'bob@university.edu', '0923456789'),
 ('B10402002', 'Student', 'hashed_pw_student2', 'Charlie (Student)', 'Business', 'charlie@university.edu', '0934567890'),
 ('B10402003', 'Student', 'hashed_pw_student3', 'David (Student)', 'Design', 'david@university.edu', '0945678901');
-=======
+
 -- 另外已hash 過的 方式: print("Bob 密碼 Hash:", generate_password_hash("pw_student1")))
 --Alice 密碼 Hash:", 原密碼:pw_admin1 ->可直接輸入
 --Bob 密碼 Hash: , 原密碼pw_student1
@@ -16,7 +16,7 @@ INSERT INTO User (role, password, name, department, grade, email, phone) VALUES
 ('Student', 'scrypt:32768:8:1$HwIfmoxAzNkGxCHP$d6263d7cf35ed38ed9af17e8bb16e608613099a94f7409c66fc147b070b5f00cfca86073de750b61b5f5daf5fab57a3159269fbcdfdc8b0308cdf171d1e8fe98', 'Bob (Student)', 'Computer Science', 'Sophomore', 'bob@university.edu', '0923456789'),
 ('Student', 'scrypt:32768:8:1$GVRr2qhBzRPX6frJ$5060ad8bb81b2eb91c1e23435f94fff366fb96a2df459110ffa969e1f2790262eb0e9ed21740f974c7c542edaf87d4aac654f4ed43dd107afde4de0749dca100', 'Charlie (Student)', 'Business', 'Junior', 'charlie@university.edu', '0934567890'),
 ('Student', 'scrypt:32768:8:1$RJK0zIcCPVcAh6Ml$d0669efe4c4391c0220dfa24bf18999ae9d268358b7031caff96670661f45a2c497fc2a24b7ab43bc789159c4cf2853d908c410220cf7ad47c4eaad358a1c8cb', 'David (Student)', 'Design', 'Freshman', 'david@university.edu', '0945678901');
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
+
 
 -- 插入 Category 範例資料
 INSERT INTO Category (category_name) VALUES

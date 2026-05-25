@@ -186,36 +186,26 @@ def update_user_profile():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-<<<<<<< HEAD
-    # 【修正】統一只用唯一的 user_id 或 email 來做精準更新
+        # 【修正】拿掉不安全的 OR email = ?，統一只用唯一的 user_id (主鍵) 來做精準更新
         query = """
             UPDATE User 
             SET name = ?, phone = ?, email = ?, department = ?
-            WHERE user_id = ? OR email = ?
-=======
-    # 【修正】拿掉不安全的 OR email = ?，統一只用唯一的 user_id (主鍵) 來做精準更新
-        query = """
-            UPDATE User 
-            SET name = ?, phone = ?, email = ?, department = ?
-            WHERE email = ? OR user_id = ?
             WHERE user_id = ?
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
         """
         cursor.execute(query, (
             data.get('name'), 
             data.get('phone'), 
             data.get('email'), 
             data.get('dept'), 
-            user_id,
             user_id
         ))
         conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
-<<<<<<< HEAD
 
-=======
-<<<<<<< HEAD
 # 6. 使用者登入 —— 已修正管理員權限未驗證漏洞
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -227,42 +217,15 @@ def login():
     # 安全檢查：確保必要參數都有傳入
     if not account or not password or not login_role:
         return jsonify({"error": "缺少帳號、密碼或角色資訊"}), 400
-=======
-
-# 6. 使用者登入
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
-# 6. 使用者登入
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    account = data.get('id')
-    password = data.get('pw')
-<<<<<<< HEAD
-=======
->>>>>>> 97febc57db8f6b4ebdffc61d7efd351e7266f867
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
 
     conn = get_db_connection()
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-<<<<<<< HEAD
-        cursor.execute("SELECT * FROM User WHERE user_id = ?", (account,))
-        user = cursor.fetchone()
-
-        if user:
-            if check_password_hash(user['password'], password):
-                user_dict = dict(user)
-                return jsonify({
-                    "success": True, 
-                    "user": {
-                        "id": user_dict['user_id'],      
-=======
         cursor.execute("SELECT * FROM User WHERE email = ?", (account,))
         user = cursor.fetchone()
 
         if user:
-<<<<<<< HEAD
             # 1. 先驗證密碼雜湊是否正確
             if check_password_hash(user['password'], password):
                 user_dict = dict(user)
@@ -278,62 +241,28 @@ def login():
                     return jsonify({"error": "權限不符，您無法以該角色身份登入"}), 403
 
                 # 4. 安全過關，允許登入
-=======
-            # ========================================================
-            # 放入這裡：觀察資料庫讀出來的密碼，跟前端這次輸入的密碼
-            # ========================================================
-            # ========================================================
-
-            if check_password_hash(user['password'], password):
-                user_dict = dict(user)
->>>>>>> 97febc57db8f6b4ebdffc61d7efd351e7266f867
                 return jsonify({
                     "success": True, 
                     "user": {
                         "id": user_dict['email'],      
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
                         "id_db": user_dict['user_id'], 
                         "name": user_dict['name'],
                         "phone": user_dict['phone'],
                         "email": user_dict['email'],
                         "dept": user_dict['department'],
-<<<<<<< HEAD
-                        "role": user_dict['role']
-                    }
-                })
-=======
-<<<<<<< HEAD
                         "role": db_role
                     }
                 })
-                
-=======
-                        "role": user_dict['role']
-                    }
-                })
->>>>>>> 97febc57db8f6b4ebdffc61d7efd351e7266f867
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
         return jsonify({"error": "帳號或密碼錯誤"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
 # 7. 使用者註冊
 @app.route('/api/register_user', methods=['POST'])
 def register_user():
     data = request.json
-<<<<<<< HEAD
-    user_id = data.get('id')  # 學號
-    password = data.get('pw')
-    role = data.get('role')
-    name = data.get('name', '新使用者')
-    phone = data.get('phone', '')
-    email = data.get('email', '')
-    dept = data.get('dept', '未設定')
-
-    hashed_password = generate_password_hash(password)
-
-=======
     account = data.get('id')  # 帳號為 email
     password = data.get('pw')
 
@@ -342,37 +271,23 @@ def register_user():
 
     role = data.get('role')
 
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         # 檢查是否已存在
-<<<<<<< HEAD
-        cursor.execute("SELECT user_id FROM User WHERE user_id = ? OR email = ?", (user_id, email))
-        if cursor.fetchone():
-            return jsonify({"error": "此學號或Email已被註冊"}), 400
-=======
         cursor.execute("SELECT user_id FROM User WHERE email = ?", (account,))
         if cursor.fetchone():
             return jsonify({"error": "此帳號(Email)已被註冊"}), 400
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
 
         real_role = 'Organizer' if role == 'admin' else 'Student'
 
         query = """
-<<<<<<< HEAD
-            INSERT INTO User (user_id, email, password, role, name, department, phone)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """
-        cursor.execute(query, (user_id, email, hashed_password, real_role, name, dept, phone))
-=======
             INSERT INTO User (email, password, role, name, department, phone)
             VALUES (?, ?, ?, ?, ?, ?)
         """
         # === 核心修正點 ===
         # 這裡的第二個參數必須帶入 剛剛加密好的 hashed_password，而不是原始的 password
         cursor.execute(query, (account, hashed_password, real_role, "新使用者", "未設定", ""))
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
@@ -380,6 +295,7 @@ def register_user():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
 # 8. 取得特定活動的報名名單 (供管理員使用)
 @app.route('/api/registrations', methods=['GET'])
 def get_all_registrations():
@@ -391,11 +307,7 @@ def get_all_registrations():
         query = """
             SELECT 
                 r.event_id,
-<<<<<<< HEAD
-                u.user_id as uid,
-=======
                 u.email as uid,
->>>>>>> d90ad5e25139e7b4ed6adf246f891d4e8423dd76
                 u.name,
                 u.department as dept,
                 d.dietary_req as meal
