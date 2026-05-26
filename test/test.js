@@ -6,24 +6,24 @@ let ACTS = [];
 // Simulate registration records per activity (mock data)
 const REGISTRATIONS = {
   0: [
-    { uid:'B10001', name:'王小明', dept:'資工系', meal:'meat' },
-    { uid:'B10002', name:'林雅婷', dept:'管理系', meal:'veg' },
-    { uid:'B10003', name:'陳俊宏', dept:'電機系', meal:'meat' },
+    { uid:'B10001', name:'John Doe', dept:'CSE', meal:'meat' },
+    { uid:'B10002', name:'Jane Smith', dept:'Management', meal:'veg' },
+    { uid:'B10003', name:'David Chen', dept:'EE', meal:'meat' },
   ],
   1: [
-    { uid:'B10004', name:'黃怡君', dept:'藝術系', meal:'veg' },
-    { uid:'B10005', name:'李建志', dept:'設計系', meal:'meat' },
+    { uid:'B10004', name:'Emily Huang', dept:'Arts', meal:'veg' },
+    { uid:'B10005', name:'Michael Lee', dept:'Design', meal:'meat' },
   ],
   2: [
-    { uid:'B10006', name:'張美玲', dept:'音樂系', meal:'meat' },
+    { uid:'B10006', name:'Sarah Chang', dept:'Music', meal:'meat' },
   ],
 };
 
 const TAGCOLOR = {
-  '體育':'green','競賽':'green','藝術':'purple','手作':'orange',
-  '音樂':'purple','環保':'blue','生活':'blue','資訊':'blue',
-  '展覽':'purple','講座':'orange','文化':'green','交流':'green',
-  '健康':'green','娛樂':'purple'
+  'Sports':'green','Competition':'green','Arts':'purple','Handicraft':'orange',
+  'Music':'purple','Eco':'blue','Life':'blue','IT':'blue',
+  'Exhibition':'purple','Lecture':'orange','Culture':'green','Exchange':'green',
+  'Health':'green','Entertainment':'purple'
 };
 const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
 
@@ -122,16 +122,16 @@ function renderCards() {
           <div class="act-meta"><i class="ti ti-calendar"></i><span class="act-date">${a.date}</span></div>
           <div class="act-tags">
             ${a.tags.map(t => `<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('')}
-            ${reg ? '<span class="tag green">✓ 已報名</span>' : ''}
+            ${reg ? '<span class="tag green">✓ Registered</span>' : ''}
           </div>
         </div>
       </div>
       <div class="act-bottom">
         <div class="progress-wrap">
-          <div class="progress-label">${a.quota} / ${a.max} 人已報名</div>
+          <div class="progress-label">${a.quota} / ${a.max} Attending</div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
         </div>
-        <span class="act-spots">${a.max - a.quota} 名額</span>
+        <span class="act-spots">${a.max - a.quota} Spots Left</span>
       </div>
     </div>`;
   }).join('');
@@ -149,7 +149,7 @@ function openDetail(id) {
   
   // === 💡 核心修正：相容字串格式的標籤處理 ===
   // 如果 a.tags 已經是字串，直接切開變成陣列，或者直接包成陣列來做 map
-  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? a.tags.split(',') : ['未分類']);
+  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? a.tags.split(',') : ['Uncategorized']);
   document.getElementById('dTags').innerHTML = tagsArray.map(t => {
     const cleanTag = t.trim();
     return `<span class="tag ${TAGCOLOR[cleanTag] || 'green'}">${cleanTag}</span>`;
@@ -159,18 +159,18 @@ function openDetail(id) {
   document.getElementById('dLocation').textContent = a.loc;
   
   // 🎯 這裡就能順利渲染活動描述，不會中途死機了！
-  document.getElementById('dDesc').textContent = a.desc || "此活動暫無詳細描述。";
+  document.getElementById('dDesc').textContent = a.desc || "No description available for this event.";
   document.getElementById('dQuota').textContent = a.quota;
   document.getElementById('dMax').textContent = a.max;
 
   const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
   if (already) {
-    btn.textContent = '✕ 取消報名'; btn.className = 'register-btn cancel'; btn.disabled = false;
+    btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel'; btn.disabled = false;
   } else if (a.quota >= a.max) {
-    btn.textContent = '名額已滿'; btn.className = 'register-btn'; btn.disabled = true;
+    btn.textContent = 'Fully Booked'; btn.className = 'register-btn'; btn.disabled = true;
   } else {
-    btn.textContent = '立即報名'; btn.className = 'register-btn'; btn.disabled = false;
+    btn.textContent = 'Register Now'; btn.className = 'register-btn'; btn.disabled = false;
   }
   document.getElementById('detailOverlay').classList.add('open');
 }
@@ -245,12 +245,12 @@ async function submitReg() {
       });
       const data = await res.json();
       if (!res.ok) {
-          alert(data.error || '報名失敗');
+          alert(data.error || 'Registration failed');
           return;
       }
       
       document.getElementById('mealModal').classList.remove('open');
-      document.getElementById('successMsg').textContent = `您已成功報名「${a.title}」，餐點選擇：${selectedMeal==='meat'?'葷食':'素食'}。`;
+      document.getElementById('successMsg').textContent = `You have successfully registered for "${a.title}". Meal preference: ${selectedMeal==='meat'?'Non-Vegetarian':'Vegetarian'}.`;
       document.getElementById('successModal').classList.add('open');
       
       await loadMyActivities();
@@ -259,11 +259,11 @@ async function submitReg() {
       
       // Update UI button on detail page explicitly
       const btn = document.getElementById('regBtn');
-      btn.textContent = '✕ 取消報名'; btn.className = 'register-btn cancel';
+      btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel';
       document.getElementById('dQuota').textContent = ACTS.find(x => x.id === currentDetailId).quota;
   } catch (e) {
       console.error(e);
-      alert('發生錯誤');
+      alert('An error occurred');
   }
 }
 
@@ -279,7 +279,7 @@ function closeMeal() { document.getElementById('mealModal').classList.remove('op
 function openCancelModal(id) {
   cancelTargetId = id;
   const a = ACTS.find(x => x.id === id);
-  document.getElementById('cancelMsg').textContent = `確定要取消「${a.title}」的報名嗎？取消後名額將釋出。`;
+  document.getElementById('cancelMsg').textContent = `Are you sure you want to cancel your registration for "${a.title}"? Your spot will be released.`;
   document.getElementById('cancelModal').classList.add('open');
 }
 
@@ -304,13 +304,13 @@ async function confirmCancel() {
       const data = await res.json();
       
       if (!res.ok) {
-          alert(data.error || '取消失敗');
-          return;
-      }
+        alert(data.error || 'Cancellation failed');
+        return;
+    }
 
-      document.getElementById('cancelModal').classList.remove('open');
-      document.getElementById('cancelSuccessMsg').textContent = `已取消「${a.title}」的報名，名額已釋出。`;
-      document.getElementById('cancelSuccessModal').classList.add('open');
+    document.getElementById('cancelModal').classList.remove('open');
+    document.getElementById('cancelSuccessMsg').textContent = `Successfully canceled registration for "${a.title}". The spot has been released.`;
+    document.getElementById('cancelSuccessModal').classList.add('open');
       
       // 先更新 myActivities，renderCards() 才能正確判斷 reg 是否存在
       await loadMyActivities();
@@ -320,16 +320,16 @@ async function confirmCancel() {
     
       // Update UI button on detail page explicitly
       if (currentDetailId === cancelTargetId) {
-          const btn = document.getElementById('regBtn');
-          btn.textContent = '立即報名'; btn.className = 'register-btn'; btn.disabled = false;
-          // After loadEvents, ACTS is reloaded so we need to fetch a again to get new quota
-          const reloadedA = ACTS.find(x => x.id === cancelTargetId);
-          document.getElementById('dQuota').textContent = reloadedA ? reloadedA.quota : a.quota;
-      }
-  } catch (e) {
-      console.error(e);
-      alert('發生錯誤');
-  }
+        const btn = document.getElementById('regBtn');
+        btn.textContent = 'Register Now'; btn.className = 'register-btn'; btn.disabled = false;
+        // After loadEvents, ACTS is reloaded so we need to fetch a again to get new quota
+        const reloadedA = ACTS.find(x => x.id === cancelTargetId);
+        document.getElementById('dQuota').textContent = reloadedA ? reloadedA.quota : a.quota;
+    }
+} catch (e) {
+    console.error(e);
+    alert('An error occurred');
+}
   
   cancelTargetId = null;
 }
@@ -367,7 +367,7 @@ function switchAuthTab(tab) {
 async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value.trim();
-  if (!id || !pw) return alert('請填寫帳號與密碼');
+  if (!id || !pw) return alert('Please enter both your account ID and password');
 
   try {
     const res = await fetch(`${API_BASE}/login`, {
@@ -377,7 +377,7 @@ async function doLogin() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || '登入失敗');
+      alert(data.error || 'Login failed');
       return;
     }
     
@@ -399,7 +399,7 @@ async function doLogin() {
     }
   } catch(e) {
     console.error(e);
-    alert('發生錯誤');
+    alert('An error occurred');
   }
 }
 
@@ -440,7 +440,7 @@ async function doRegister() {
 
     if (currentRole === 'admin') {
       const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
-      if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('管理員驗證碼錯誤（提示：nsysu2025）');
+      if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('Incorrect administrator verification code (Hint: nsysu2025)');
       closeAuth();
       showAdminInterface();
     } else {
@@ -451,7 +451,7 @@ async function doRegister() {
     }
   } catch(e) {
     console.error(e);
-    alert('發生錯誤');
+    alert('An error occurred');
   }
 }
 
@@ -461,11 +461,11 @@ function closeAuth() { document.getElementById('authModal').classList.remove('op
 function renderMine() {
   const el = document.getElementById('mine-content');
   if (!currentUser) {
-    el.innerHTML = `<div class="empty-state"><i class="ti ti-calendar-off"></i><p>請先登入以查看<br>已報名的活動</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')" style="margin-top:6px">前往登入</button></div>`;
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Please log in first to view<br>your registered events</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')" style="margin-top:6px">Go to Login</button></div>`;
     return;
   }
   if (!myActivities.length) {
-    el.innerHTML = `<div class="empty-state"><i class="ti ti-mood-empty"></i><p>還沒有報名任何活動</p><button class="lp-btn outline" onclick="switchTab(0)" style="margin-top:4px">去探索活動</button></div>`;
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-mood-empty"></i><p>You haven't registered for any events yet</p><button class="lp-btn outline" onclick="switchTab(0)" style="margin-top:4px">Explore Events</button></div>`;
     return;
   }
   el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => `
@@ -473,28 +473,28 @@ function renderMine() {
       <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
       <div class="my-act-info">
         <h4>${m.title}</h4>
-        <p>${m.date} · ${m.meal==='meat'?'🍖 葷食':'🌿 素食'}</p>
+        <p>${m.date} · ${m.meal==='meat'?'🍖 Non-Vegetarian':'🌿 Vegetarian'}</p>
       </div>
       <div class="my-act-right">
-        <span class="my-badge confirmed">已確認</span>
-        <button class="cancel-small-btn" onclick="cancelFromMine(${m.id})">取消報名</button>
+        <span class="my-badge confirmed">Confirmed</span>
+        <button class="cancel-small-btn" onclick="cancelFromMine(${m.id})">Cancel</button>
       </div>
     </div>`).join('') + `</div>`;
 }
 
 // =================== PROFILE (USER) ===================
 const FIELDS = [
-  {key:'id',   label:'學號',    icon:'ti-id-badge'},
-  {key:'name', label:'姓名',    icon:'ti-user'},
-  {key:'phone',label:'電話號碼',icon:'ti-phone'},
-  {key:'email',label:'電子郵件',icon:'ti-mail'},
-  {key:'dept', label:'系所',    icon:'ti-school'},
+  {key:'id',   label:'Student ID', icon:'ti-id-badge'},
+  {key:'name', label:'Name',       icon:'ti-user'},
+  {key:'phone',label:'Phone No.',  icon:'ti-phone'},
+  {key:'email',label:'Email',      icon:'ti-mail'},
+  {key:'dept', label:'Department', icon:'ti-school'},
 ];
 
 function renderProfile() {
   const el = document.getElementById('profile-content');
   if (!currentUser) {
-    el.innerHTML = `<div class="login-prompt"><i class="ti ti-user-circle"></i><h3>尚未登入</h3><p>登入後可查看與管理<br>您的個人資料</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')">登入</button><button class="lp-btn outline" onclick="switchAuthTab('reg');document.getElementById('authModal').classList.add('open')">註冊新帳號</button></div>`;
+    el.innerHTML = `<div class="login-prompt"><i class="ti ti-user-circle"></i><h3>Not Logged In</h3><p>Log in to view and manage<br>your personal profile</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')">Login</button><button class="lp-btn outline" onclick="switchAuthTab('reg');document.getElementById('authModal').classList.add('open')">Register New Account</button></div>`;
     return;
   }
   const initials = currentUser.name.slice(-2);
@@ -506,9 +506,9 @@ function renderProfile() {
     </div>
     <div class="profile-fields" id="profileFields"></div>
     <div class="edit-bar">
-      <button class="save-btn" id="profileEditBtn" onclick="toggleProfileEdit()">${profileEditing?'儲存變更':'編輯資料'}</button>
+      <button class="save-btn" id="profileEditBtn" onclick="toggleProfileEdit()">${profileEditing?'Save Changes':'Edit Profile'}</button>
     </div>
-    <div style="padding:0 32px 16px"><button class="logout-btn" onclick="logout()">登出</button></div>`;
+    <div style="padding:0 32px 16px"><button class="logout-btn" onclick="logout()">Logout</button></div>`;
   renderFields();
 }
 
@@ -531,7 +531,7 @@ async function toggleProfileEdit() {
   if (profileEditing) {
     FIELDS.forEach(f => { const inp = document.getElementById('fi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     profileEditing = false;
-    document.getElementById('profileEditBtn').textContent = '編輯資料';
+    document.getElementById('profileEditBtn').textContent = 'Edit Profile';
     
     // Save to database
     try {
@@ -541,7 +541,7 @@ async function toggleProfileEdit() {
             body: JSON.stringify(currentUser) 
         });
     } catch(e) {
-        console.error("更新失敗", e);
+        console.error("Update failed", e);
     }
 
     renderFields();
@@ -553,7 +553,7 @@ async function toggleProfileEdit() {
     if (av)   av.textContent   = currentUser.name.slice(-2);
   } else {
     profileEditing = true;
-    document.getElementById('profileEditBtn').textContent = '儲存變更';
+    document.getElementById('profileEditBtn').textContent = 'Save Changes';
     renderFields();
   }
 }
@@ -571,7 +571,7 @@ function logout() {
 }
 
 // =================== BANNER ===================
-const BANNER_LABELS = ['🔥 熱門', '🎨 新上架', '🎵 限量'];
+const BANNER_LABELS = ['🔥 Hot', '🎨 New', '🎵 Limited'];
 const BANNER_GRADIENTS = [
   'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
   'linear-gradient(135deg, #025E73 0%, #F2EBEB 100%)',
@@ -589,11 +589,11 @@ function renderBanner() {
   const items = ACTS.slice(0, 3);
 
   scroll.innerHTML = items.map((a, i) => `
-    <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
-      <div class="label">${BANNER_LABELS[i] || '📅 活動'}</div>
-      <div class="people">${a.quota} / ${a.max} 人</div>
-      <div class="title">${a.title}</div>
-    </div>
+  <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
+    <div class="label">${BANNER_LABELS[i] || '📅 Event'}</div>
+    <div class="people">${a.quota} / ${a.max} Attending</div>
+    <div class="title">${a.title}</div>
+  </div>
   `).join('');
 
   dotWrap.innerHTML = items.map((_, i) =>
@@ -665,12 +665,12 @@ function renderAdminNav() {
 
   const badge = document.createElement('div');
   badge.className = 'admin-badge-nav';
-  badge.innerHTML = `<i class="ti ti-shield-check"></i> 管理員模式`;
+  badge.innerHTML = `<i class="ti ti-shield-check"></i> Admin Mode`;
   nav.insertBefore(badge, nav.children[1]);
 
   const bottom = document.createElement('div');
   bottom.className = 'nav-bottom';
-  bottom.innerHTML = `<button class="nav-bottom-btn" onclick="adminLogout()"><i class="ti ti-logout"></i> 登出管理員</button>`;
+  bottom.innerHTML = `<button class="nav-bottom-btn" onclick="adminLogout()"><i class="ti ti-logout"></i> Logout Admin</button>`;
   nav.appendChild(bottom);
 
   // update header badge
@@ -706,21 +706,21 @@ function renderAdminStats() {
   document.getElementById('admin-stats-row').innerHTML = `
     <div class="admin-stat-card">
       <div class="admin-stat-num">${totalActs}</div>
-      <div class="admin-stat-label">活動總數</div>
+      <div class="admin-stat-label">Total Events</div>
     </div>
     <div class="admin-stat-card">
       <div class="admin-stat-num">${totalReg}</div>
-      <div class="admin-stat-label">總報名人數</div>
+      <div class="admin-stat-label">Total Attendees</div>
     </div>
     <div class="admin-stat-card">
       <div class="admin-stat-num">${totalMeat}</div>
-      <div class="admin-stat-label">葷食訂餐</div>
-      <div class="admin-stat-sub">🍖 葷食</div>
+      <div class="admin-stat-label">Meat Orders</div>
+      <div class="admin-stat-sub">🍖 Meat</div>
     </div>
     <div class="admin-stat-card">
       <div class="admin-stat-num">${totalVeg}</div>
-      <div class="admin-stat-label">素食訂餐</div>
-      <div class="admin-stat-sub">🌿 素食</div>
+      <div class="admin-stat-label">Veg Orders</div>
+      <div class="admin-stat-sub">🌿 Veg</div>
     </div>`;
 }
 
@@ -742,19 +742,19 @@ function renderAdminActivityList() {
         </div>
         <div class="admin-act-actions">
           <button class="admin-btn view" onclick="openRegDetail(${a.id})">
-            <i class="ti ti-users"></i>報名
+            <i class="ti ti-users"></i>List
           </button>
           <button class="admin-btn edit" onclick="openEditActivity(${a.id})">
-            <i class="ti ti-edit"></i>編輯
+            <i class="ti ti-edit"></i>Edit
           </button>
           <button class="admin-btn del" onclick="openDeleteModal(${a.id})">
-            <i class="ti ti-trash"></i>刪除
+            <i class="ti ti-trash"></i>Delete
           </button>
         </div>
       </div>
       <div class="admin-act-footer">
         <div class="admin-progress-wrap">
-          <div class="admin-quota-label">${a.quota} / ${a.max} 人已報名（${pct}%）</div>
+          <div class="admin-quota-label">${a.quota} / ${a.max} Attending (${pct}%)</div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
         </div>
         <div class="admin-meal-pills">
@@ -774,26 +774,25 @@ function openRegDetail(actId) {
   const veg  = regs.filter(r => r.meal === 'veg').length;
 
   document.getElementById('adminRegDetailTitle').textContent = a.title;
-  document.getElementById('adminRegDetailSub').textContent   = `共 ${regs.length} 人報名・葷食 ${meat} 人・素食 ${veg} 人`;
-
+  document.getElementById('adminRegDetailSub').textContent   = `Total ${regs.length} registrations · Meat ${meat} · Vegetarian ${veg}`;
   let tableHtml = '';
   if (regs.length === 0) {
-    tableHtml = `<div class="empty-state" style="padding:24px 0"><i class="ti ti-users" style="font-size:32px;opacity:.3"></i><p>目前尚無人報名</p></div>`;
+    tableHtml = `<div class="empty-state" style="padding:24px 0"><i class="ti ti-users" style="font-size:32px;opacity:.3"></i><p>No registrations yet</p></div>`;
   } else {
     tableHtml = `
     <div style="margin-bottom:12px;display:flex;gap:8px">
-      <span class="meal-pill meat" style="font-size:13px;padding:4px 12px">🍖 葷食 ${meat} 人</span>
-      <span class="meal-pill veg"  style="font-size:13px;padding:4px 12px">🌿 素食 ${veg} 人</span>
+      <span class="meal-pill meat" style="font-size:13px;padding:4px 12px">🍖 Meat ${meat}</span>
+      <span class="meal-pill veg"  style="font-size:13px;padding:4px 12px">🌿 Veg ${veg}</span>
     </div>
     <div style="overflow-x:auto">
     <table class="reg-table">
       <thead>
         <tr>
           <th>#</th>
-          <th>學號/帳號</th>
-          <th>姓名</th>
-          <th>系所</th>
-          <th>餐點</th>
+          <th>Student ID / Account</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Meal</th>
         </tr>
       </thead>
       <tbody>
@@ -804,7 +803,7 @@ function openRegDetail(actId) {
           <td style="font-weight:600">${r.name}</td>
           <td>${r.dept}</td>
           <td>
-            <span class="meal-pill ${r.meal}">${r.meal==='meat'?'🍖 葷食':'🌿 素食'}</span>
+            <span class="meal-pill ${r.meal}">${r.meal==='meat'?'🍖 Meat':'🌿 Veg'}</span>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -861,7 +860,7 @@ function renderAdminRegistrations() {
           <p>${a.date}</p>
         </div>
         <div>
-          <div class="reg-overview-count">${a.quota}<span>/ ${a.max} 人</span></div>
+          <div class="reg-overview-count">${a.quota}<span>/ ${a.max} Attendees</span></div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px">
@@ -881,8 +880,8 @@ function renderAdminRegistrations() {
 // =================== ADMIN: ADD / EDIT ACTIVITY ===================
 function openAddActivity() {
   editingActId = null;
-  document.getElementById('actFormTitle').textContent    = '新增活動';
-  document.getElementById('actFormSubtitle').textContent = '填寫活動資訊';
+  document.getElementById('actFormTitle').textContent    = 'Create Event';
+  document.getElementById('actFormSubtitle').textContent = 'Fill in event details';
   document.getElementById('af_title').value  = '';
   document.getElementById('af_date').value   = '';
   document.getElementById('af_loc').value    = '';
@@ -904,7 +903,7 @@ async function saveActivity() {
 
     // 簡單驗證
     if (!title || !date || !loc || isNaN(max)) {
-        return alert('請填寫所有必填欄位，並確保人數為數字！');
+      return alert('Please fill in all required fields and ensure capacity is a number!');
     }
 
     // 2. 組裝要送給後端的 JSON 欄位（精準對齊 Flask 接收名稱）
@@ -940,9 +939,9 @@ async function saveActivity() {
         }
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || '儲存失敗');
+        if (!res.ok) throw new Error(data.error || 'Save failed');
 
-        alert(data.message || '操作成功！');
+        alert(data.message || 'Operation successful!');
         
         // 3. 關閉表單彈窗（請確保對應到你的 HTML 關閉 id 或是 class）
         document.getElementById('adminActFormModal')?.classList.remove('open'); 
@@ -962,8 +961,8 @@ function openEditActivity(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
   editingActId = id;
-  document.getElementById('actFormTitle').textContent    = '編輯活動';
-  document.getElementById('actFormSubtitle').textContent = `正在編輯：${a.title}`;
+  document.getElementById('actFormTitle').textContent    = 'Edit Event';
+  document.getElementById('actFormSubtitle').textContent = `Editing: ${a.title}`;
   document.getElementById('af_title').value  = a.title;
   document.getElementById('af_date').value   = a.date;
   document.getElementById('af_loc').value    = a.loc;
@@ -988,7 +987,7 @@ async function submitActivityForm() {
   const tagsRaw = document.getElementById('af_tags').value.trim();
   const desc  = document.getElementById('af_desc').value.trim();
 
-  if (!title || !date || !loc) return alert('請填寫活動名稱、日期時間與地點');
+  if (!title || !date || !loc) return alert('Please fill in the event name, date/time, and location');
 
   // 將時間拆分（因為後端 SQLite 分開存 event_day 與 event_time）
   
@@ -1021,10 +1020,10 @@ async function submitActivityForm() {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '修改失敗');
+      if (!res.ok) throw new Error(data.error || 'Update failed');
 
       document.getElementById('activityFormModal').classList.remove('open');
-      showAdminSuccess('活動已更新', `「${title}」的資訊已成功同步至資料庫。`);
+      showAdminSuccess('Event Updated', `"${title}" has been successfully synchronized to the database.`);
     } else {
       // === 新增全新活動 (POST) ===
       const res = await fetch(`${API_BASE}/api/events`, {
@@ -1033,10 +1032,10 @@ async function submitActivityForm() {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '新增失敗');
+      if (!res.ok) throw new Error(data.error || 'Creation failed');
 
       document.getElementById('activityFormModal').classList.remove('open');
-      showAdminSuccess('活動已新增', `「${title}」已成功寫入資料庫活動列表。`);
+      showAdminSuccess('Event Created', `"${title}" has been successfully added to the database event list.`);
     }
 
     // 重新載入資料庫最新資料並重新渲染 UI
@@ -1045,7 +1044,7 @@ async function submitActivityForm() {
 
   } catch (e) {
     console.error(e);
-    alert('操作失敗：' + e.message);
+    alert('Operation failed: ' + e.message);
   }
 }
 
@@ -1058,7 +1057,7 @@ function closeActivityForm() {
 function openDeleteModal(id) {
   deleteTargetId = id;
   const a = ACTS.find(x => x.id === id);
-  document.getElementById('adminDeleteMsg').textContent = `確定要永久刪除「${a.title}」嗎？此操作無法復原，所有報名資料也將一併刪除。`;
+  document.getElementById('adminDeleteMsg').textContent = `Are you sure you want to permanently delete "${a.title}"? This operation cannot be undone and all registration records will be cleared.`;
   document.getElementById('adminDeleteModal').classList.add('open');
 }
 
@@ -1078,11 +1077,11 @@ async function confirmDeleteActivity() {
     });
     const data = await res.json();
     
-    if (!res.ok) throw new Error(data.error || '刪除失敗');
+    if (!res.ok) throw new Error(data.error || 'Delete failed');
 
     // 關閉刪除確認彈窗
     document.getElementById('adminDeleteModal').classList.remove('open');
-    showAdminSuccess('活動已刪除', `「${a ? a.title : '該活動'}」已從資料庫永久刪除。`);
+    showAdminSuccess('Event Deleted', `"${a ? a.title : 'The event'}" has been permanently removed from the database.`);
     
     // 重新從資料庫載入最新活動列表
     await loadEvents();
@@ -1096,7 +1095,7 @@ async function confirmDeleteActivity() {
 
   } catch (e) {
     console.error(e);
-    alert('刪除失敗：' + e.message);
+    alert('Delete failed: ' + e.message);
   }
 
   deleteTargetId = null;
@@ -1137,11 +1136,11 @@ function closeAdminSuccess() {
 
 // =================== ADMIN: PROFILE ===================
 const ADMIN_FIELDS = [
-  {key:'id',   label:'帳號',    icon:'ti-id-badge'},
-  {key:'name', label:'姓名',    icon:'ti-user'},
-  {key:'phone',label:'電話',    icon:'ti-phone'},
-  {key:'email',label:'電子郵件',icon:'ti-mail'},
-  {key:'dept', label:'單位',    icon:'ti-building'},
+  {key:'id',   label:'Account',     icon:'ti-id-badge'},
+  {key:'name', label:'Name',        icon:'ti-user'},
+  {key:'phone',label:'Phone',       icon:'ti-phone'},
+  {key:'email',label:'Email',       icon:'ti-mail'},
+  {key:'dept', label:'Organization',icon:'ti-building'},
 ];
 
 let adminProfileEditing = false;
@@ -1156,15 +1155,15 @@ function renderAdminProfile() {
       <div class="profile-name">${currentUser.name}</div>
       <div class="profile-dept" style="display:flex;align-items:center;gap:5px;margin-top:4px">
         <i class="ti ti-shield-check" style="color:var(--primary)"></i>
-        管理員 · ${currentUser.dept}
+        Administrator · ${currentUser.dept}
       </div>
     </div>
     <div class="profile-fields" id="adminProfileFields"></div>
     <div class="edit-bar">
-      <button class="save-btn" id="adminProfileEditBtn" onclick="toggleAdminProfileEdit()">${adminProfileEditing?'儲存變更':'編輯資料'}</button>
+      <button class="save-btn" id="adminProfileEditBtn" onclick="toggleAdminProfileEdit()">${adminProfileEditing?'Save Changes':'Edit Profile'}</button>
     </div>
     <div style="padding:0 32px 16px">
-      <button class="logout-btn" onclick="adminLogout()">登出管理員</button>
+      <button class="logout-btn" onclick="adminLogout()">Logout Admin</button>
     </div>`;
   renderAdminFields();
 }
@@ -1188,7 +1187,7 @@ async function toggleAdminProfileEdit() {
   if (adminProfileEditing) {
     ADMIN_FIELDS.forEach(f => { const inp = document.getElementById('afi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     adminProfileEditing = false;
-    document.getElementById('adminProfileEditBtn').textContent = '編輯資料';
+    document.getElementById('adminProfileEditBtn').textContent = 'Edit Profile';
     
     // Save to database
     try {
@@ -1197,8 +1196,8 @@ async function toggleAdminProfileEdit() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(currentUser) 
         });
-    } catch(e) {
-        console.error("更新失敗", e);
+      } catch(e) {
+        console.error("Update failed", e);
     }
 
     renderAdminFields();
@@ -1209,7 +1208,7 @@ async function toggleAdminProfileEdit() {
     if (av) av.textContent = currentUser.name.slice(-2);
   } else {
     adminProfileEditing = true;
-    document.getElementById('adminProfileEditBtn').textContent = '儲存變更';
+    document.getElementById('adminProfileEditBtn').textContent = 'Save Changes';
     renderAdminFields();
   }
 }
