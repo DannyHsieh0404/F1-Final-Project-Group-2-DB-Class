@@ -142,13 +142,24 @@ function openDetail(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
   currentDetailId = id;
+  
   document.getElementById('dTitle').textContent = a.title;
   document.getElementById('dHero').textContent = a.emoji;
-  document.getElementById('dHero').style.background = HEROCOLOR[a.color];
-  document.getElementById('dTags').innerHTML = a.tags.map(t => `<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('');
+  document.getElementById('dHero').style.background = HEROCOLOR[a.color] || '#4f46e5';
+  
+  // === 💡 核心修正：相容字串格式的標籤處理 ===
+  // 如果 a.tags 已經是字串，直接切開變成陣列，或者直接包成陣列來做 map
+  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? a.tags.split(',') : ['未分類']);
+  document.getElementById('dTags').innerHTML = tagsArray.map(t => {
+    const cleanTag = t.trim();
+    return `<span class="tag ${TAGCOLOR[cleanTag] || 'green'}">${cleanTag}</span>`;
+  }).join('');
+  
   document.getElementById('dDate').textContent = a.date;
   document.getElementById('dLocation').textContent = a.loc;
-  document.getElementById('dDesc').textContent = a.desc;
+  
+  // 🎯 這裡就能順利渲染活動描述，不會中途死機了！
+  document.getElementById('dDesc').textContent = a.desc || "此活動暫無詳細描述。";
   document.getElementById('dQuota').textContent = a.quota;
   document.getElementById('dMax').textContent = a.max;
 
@@ -163,7 +174,6 @@ function openDetail(id) {
   }
   document.getElementById('detailOverlay').classList.add('open');
 }
-
 function closeDetail(e) {
   if (e.target === document.getElementById('detailOverlay')) closeDetailForce();
 }
@@ -1022,7 +1032,29 @@ async function confirmDeleteActivity() {
 
   deleteTargetId = null;
 }
+// 初始化時綁定搜尋與篩選事件 不重整網頁的即時活動查詢
+document.getElementById('searchKeyword').addEventListener('input', doFilter);
+document.getElementById('filterTag').addEventListener('change', doFilter);
 
+function doFilter() {
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const selectedTag = document.getElementById('filterTag').value;
+
+    const filteredResult = window.allEvents.filter(act => {
+        // 關鍵字比對：名稱、地點、或是描述
+        const matchText = act.title.toLowerCase().includes(keyword) || 
+                          act.loc.toLowerCase().includes(keyword) ||
+                          (act.description && act.description.toLowerCase().includes(keyword));
+        
+        // 標籤比對
+        const matchTag = selectedTag === 'all' || act.tags === selectedTag;
+
+        return matchText && matchTag;
+    });
+
+    // 呼叫你原本渲染列表的 function，把 filteredResult 丢進去重新畫出畫面
+    renderActivityList(filteredResult); 
+}
 // =================== ADMIN: SUCCESS MODAL ===================
 function showAdminSuccess(title, msg) {
   document.getElementById('adminSuccessTitle').textContent = title;
@@ -1131,10 +1163,10 @@ async function loadEvents() {
       tags: d.tags ? [d.tags] : [],
       quota: d.quota || 0,
       max: d.student_capacity + d.max,
-      desc: '' // backend currently has no desc
+      desc: d.description || '' // backend currently has no desc
     }));
   
-    
+    window.allEvents = [...ACTS];
     renderCards();
     renderBanner();
 
@@ -1145,12 +1177,101 @@ async function loadEvents() {
     console.error('Failed to load events from DB:', error);
   }
 }
+// === 雙重監聽：無論是輸入文字還是切換下拉選單，都觸發 doFilter ===
+document.getElementById('searchKeyword').addEventListener('input', doFilter);
 
+if (document.getElementById('filterTag')) {
+    document.getElementById('filterTag').addEventListener('change', doFilter);
+}
+
+// === 核心複合篩選 Function ===
+function doFilter() {
+    // 1. 取得並處理關鍵字
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    
+    // 2. 取得並處理下拉選單分類
+    const filterTagEl = document.getElementById('filterTag');
+    const selectedTag = filterTagEl ? filterTagEl.value : 'all';
+
+    // 3. 如果兩個欄位都是空的/預設狀態，直接還原全部活動
+    if (!keyword && selectedTag === 'all') {
+        ACTS = [...window.allEvents];
+    } else {
+        // 4. 開始複合過濾
+        ACTS = window.allEvents.filter(act => {
+            // 條件 A：關鍵字比對 (名稱、地點、描述、標籤)
+            const matchText = !keyword || (
+                (act.title && act.title.toLowerCase().includes(keyword)) || 
+                (act.loc && act.loc.toLowerCase().includes(keyword)) ||
+                (act.desc && act.desc.toLowerCase().includes(keyword)) ||
+                (act.tags && act.tags.toLowerCase().includes(keyword))
+            );
+            
+            // 條件 B：下拉選單標籤比對
+            const matchTag = selectedTag === 'all' || (act.tags && act.tags.includes(selectedTag));
+
+            // 同時滿足才留下來
+            return matchText && matchTag;
+        });
+    }
+
+    // 5. 關鍵：重新呼叫你原本渲染卡片的 function，讓畫面更新
+    renderCards();
+}
 // =================== INIT ===================
 loadEvents();
 showUserInterface(); // default to user interface
 
 // 頁面載入後自動開啟登入彈窗
-window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('authModal').classList.add('open');
+// === 調整後的事件綁定：確保網頁加載完後執行 ===
+document.addEventListener('DOMContentLoaded', () => {
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchKeyword');
+    const filterSelect = document.getElementById('filterTag');
+
+    // 💡 1. 點擊「搜尋按鈕」時才觸發搜尋
+    if (searchBtn) {
+        searchBtn.addEventListener('click', doFilter);
+    }
+
+    // 💡 2. 在輸入框按下「Enter 鍵」時也觸發搜尋
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // 防止表單預設重整行為
+                doFilter();
+            }
+        });
+    }
+
+    // 💡 3. 下拉選單保持不變（切換分類時直接連動）
+    if (filterSelect) {
+        filterSelect.addEventListener('change', doFilter);
+    }
 });
+
+// === 核心複合篩選 Function (維持精準欄位對齊) ===
+function doFilter() {
+    if (!window.allEvents) return;
+
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const selectedTag = document.getElementById('filterTag').value;
+
+    // 開始過濾
+    ACTS = window.allEvents.filter(act => {
+        // 關鍵字比對
+        const matchText = !keyword || (
+            (act.title && act.title.toLowerCase().includes(keyword)) || 
+            (act.loc && act.loc.toLowerCase().includes(keyword)) ||
+            (act.desc && act.desc.toLowerCase().includes(keyword))
+        );
+        
+        // 標籤比對
+        const matchTag = selectedTag === 'all' || act.tags === selectedTag;
+
+        return matchText && matchTag;
+    });
+
+    // 重新繪製畫面卡片
+    renderCards(); 
+}
