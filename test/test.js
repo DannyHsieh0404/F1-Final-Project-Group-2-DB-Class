@@ -894,7 +894,70 @@ function openAddActivity() {
   document.getElementById('af_desc').value   = '';
   document.getElementById('activityFormModal').classList.add('open');
 }
+// =================== 💡 新增：儲存活動（支援新增與編輯） ===================
+async function saveActivity() {
+    // 1. 抓取表單輸入值
+    const title = document.getElementById('af_title').value.trim();
+    const date = document.getElementById('af_date').value.trim(); // 格式通常為 YYYY-MM-DD
+    const loc = document.getElementById('af_loc').value.trim();
+    const max = parseInt(document.getElementById('af_max').value.trim(), 10);
 
+    // 簡單驗證
+    if (!title || !date || !loc || isNaN(max)) {
+        return alert('請填寫所有必填欄位，並確保人數為數字！');
+    }
+
+    // 2. 組裝要送給後端的 JSON 欄位（精準對齊 Flask 接收名稱）
+    const payload = {
+        title: title,
+        date: date,           // 後端會存入 event_day
+        time: "14:00",        // 如果前端沒做時間輸入框，先給預設值
+        loc: loc,             // 對應後端 location
+        max: max,             // 對應後端 guest_capacity
+        category_id: 1,       // 預設分類分類ID
+        description: "",      // 預設詳細描述
+        emoji: "📅",           // 預設卡片圖示
+        color: "blue"         // 預設卡片顏色
+    };
+
+    try {
+        let res;
+        // 判斷當前是「編輯」還是「新增」狀態
+        if (editingActId !== null) {
+            // 💡 編輯：發送 PUT 請求
+            res = await fetch(`${API_BASE}/events/${editingActId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            // 💡 新增：發送 POST 請求
+            res = await fetch(`${API_BASE}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '儲存失敗');
+
+        alert(data.message || '操作成功！');
+        
+        // 3. 關閉表單彈窗（請確保對應到你的 HTML 關閉 id 或是 class）
+        document.getElementById('adminActFormModal')?.classList.remove('open'); 
+
+        // 4. 全域重新載入最新數據並刷新管理員後台畫面
+        await loadEvents(); 
+        await loadAllRegistrations();
+        renderAdminDashboard();
+        renderAdminRegistrations();
+
+    } catch (err) {
+        console.error(err);
+        alert(err.message);
+    }
+}
 function openEditActivity(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
@@ -1003,26 +1066,32 @@ function closeDeleteModal() {
   document.getElementById('adminDeleteModal').classList.remove('open');
   deleteTargetId = null;
 }
-
 async function confirmDeleteActivity() {
   if (deleteTargetId === null) return;
   
   const a = ACTS.find(x => x.id === deleteTargetId);
   
   try {
-    // === 刪除活動 (DELETE) ===
-    const res = await fetch(`${API_BASE}/api/events/${deleteTargetId}`, {
+    // === 💡 修正 1：拿掉多餘的 /api ===
+    const res = await fetch(`${API_BASE}/events/${deleteTargetId}`, {
       method: 'DELETE'
     });
     const data = await res.json();
     
     if (!res.ok) throw new Error(data.error || '刪除失敗');
 
+    // 關閉刪除確認彈窗
     document.getElementById('adminDeleteModal').classList.remove('open');
     showAdminSuccess('活動已刪除', `「${a ? a.title : '該活動'}」已從資料庫永久刪除。`);
     
-    // 重新從資料庫載入最新活動列表並刷新畫面
+    // 重新從資料庫載入最新活動列表
     await loadEvents();
+    
+    // 同步更新後台的記憶體資料（讓便當人數與名單同步清空）
+    await loadAllRegistrations(); 
+    
+    // === 💡 修正 2：同時刷新「總覽主頁」與「報名分頁」，確保兩邊卡片都同步消失 ===
+    renderAdminDashboard();
     renderAdminRegistrations();
 
   } catch (e) {
