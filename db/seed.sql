@@ -25,10 +25,9 @@ INSERT INTO Category (category_name) VALUES
 ('Social');
 
 -- 插入 Event 範例資料
-INSERT INTO Event (category_id, title, host_id, department, event_day, event_time, location, guest_capacity, student_capacity) VALUES
-(3, '期末聯合聚餐', 'ADMIN01', 'Information Management', '2026-06-15', '18:30:00', '學生活動中心', 5, 50),
-(2, 'SQL 工作坊', 'ADMIN01', 'Computer Science', '2026-05-25', '14:00:00', '電腦教室A', 0, 2);
-
+INSERT INTO Event (category_id, title, description, emoji, color, host_id, department, event_day, event_time, location, guest_capacity, student_capacity) VALUES
+(3, '期末聯合聚餐', '辛苦了一整學期，快來一起享用美味的晚餐吧！現場備有豐富精緻的各類餐點。', '🍔', 'orange', 'ADMIN01', 'Information Management', '2026-06-15', '18:30:00', '學生活動中心', 5, 50),
+(2, 'SQL 工作坊', '想一窺資料庫的奧秘嗎？本工作坊將手把手帶你從小試身手到熟練操作 SQL 語法！', '💻', 'blue', 'ADMIN01', 'Computer Science', '2026-06-05', '14:00:00', '電腦教室A', 0, 2);
 -- 插入 Meal_Option 範例資料
 INSERT INTO Meal_Option (event_id, meal_option) VALUES
 (1, '葷食 (豬肉)'),
