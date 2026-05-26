@@ -142,13 +142,24 @@ function openDetail(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
   currentDetailId = id;
+  
   document.getElementById('dTitle').textContent = a.title;
   document.getElementById('dHero').textContent = a.emoji;
-  document.getElementById('dHero').style.background = HEROCOLOR[a.color];
-  document.getElementById('dTags').innerHTML = a.tags.map(t => `<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('');
+  document.getElementById('dHero').style.background = HEROCOLOR[a.color] || '#4f46e5';
+  
+  // === 💡 核心修正：相容字串格式的標籤處理 ===
+  // 如果 a.tags 已經是字串，直接切開變成陣列，或者直接包成陣列來做 map
+  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? a.tags.split(',') : ['未分類']);
+  document.getElementById('dTags').innerHTML = tagsArray.map(t => {
+    const cleanTag = t.trim();
+    return `<span class="tag ${TAGCOLOR[cleanTag] || 'green'}">${cleanTag}</span>`;
+  }).join('');
+  
   document.getElementById('dDate').textContent = a.date;
   document.getElementById('dLocation').textContent = a.loc;
-  document.getElementById('dDesc').textContent = a.desc;
+  
+  // 🎯 這裡就能順利渲染活動描述，不會中途死機了！
+  document.getElementById('dDesc').textContent = a.desc || "此活動暫無詳細描述。";
   document.getElementById('dQuota').textContent = a.quota;
   document.getElementById('dMax').textContent = a.max;
 
@@ -163,7 +174,6 @@ function openDetail(id) {
   }
   document.getElementById('detailOverlay').classList.add('open');
 }
-
 function closeDetail(e) {
   if (e.target === document.getElementById('detailOverlay')) closeDetailForce();
 }
@@ -884,7 +894,70 @@ function openAddActivity() {
   document.getElementById('af_desc').value   = '';
   document.getElementById('activityFormModal').classList.add('open');
 }
+// =================== 💡 新增：儲存活動（支援新增與編輯） ===================
+async function saveActivity() {
+    // 1. 抓取表單輸入值
+    const title = document.getElementById('af_title').value.trim();
+    const date = document.getElementById('af_date').value.trim(); // 格式通常為 YYYY-MM-DD
+    const loc = document.getElementById('af_loc').value.trim();
+    const max = parseInt(document.getElementById('af_max').value.trim(), 10);
 
+    // 簡單驗證
+    if (!title || !date || !loc || isNaN(max)) {
+        return alert('請填寫所有必填欄位，並確保人數為數字！');
+    }
+
+    // 2. 組裝要送給後端的 JSON 欄位（精準對齊 Flask 接收名稱）
+    const payload = {
+        title: title,
+        date: date,           // 後端會存入 event_day
+        time: "14:00",        // 如果前端沒做時間輸入框，先給預設值
+        loc: loc,             // 對應後端 location
+        max: max,             // 對應後端 guest_capacity
+        category_id: 1,       // 預設分類分類ID
+        description: "",      // 預設詳細描述
+        emoji: "📅",           // 預設卡片圖示
+        color: "blue"         // 預設卡片顏色
+    };
+
+    try {
+        let res;
+        // 判斷當前是「編輯」還是「新增」狀態
+        if (editingActId !== null) {
+            // 💡 編輯：發送 PUT 請求
+            res = await fetch(`${API_BASE}/events/${editingActId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            // 💡 新增：發送 POST 請求
+            res = await fetch(`${API_BASE}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '儲存失敗');
+
+        alert(data.message || '操作成功！');
+        
+        // 3. 關閉表單彈窗（請確保對應到你的 HTML 關閉 id 或是 class）
+        document.getElementById('adminActFormModal')?.classList.remove('open'); 
+
+        // 4. 全域重新載入最新數據並刷新管理員後台畫面
+        await loadEvents(); 
+        await loadAllRegistrations();
+        renderAdminDashboard();
+        renderAdminRegistrations();
+
+    } catch (err) {
+        console.error(err);
+        alert(err.message);
+    }
+}
 function openEditActivity(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
@@ -903,10 +976,11 @@ function openEditActivity(id) {
   document.getElementById('activityFormModal').classList.add('open');
 }
 
-function submitActivityForm() {
+// 修改「新增／編輯活動」的表單送出
+async function submitActivityForm() {
   const title = document.getElementById('af_title').value.trim();
-  const date  = document.getElementById('af_date').value.trim();
-  const loc   = document.getElementById('af_loc').value.trim();
+  const date   = document.getElementById('af_date').value.trim();
+  const loc    = document.getElementById('af_loc').value.trim();
   const quota = parseInt(document.getElementById('af_quota').value) || 0;
   const max   = parseInt(document.getElementById('af_max').value)   || 100;
   const emoji = document.getElementById('af_emoji').value;
@@ -916,28 +990,65 @@ function submitActivityForm() {
 
   if (!title || !date || !loc) return alert('請填寫活動名稱、日期時間與地點');
 
-  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : ['活動'];
+  // 將時間拆分（因為後端 SQLite 分開存 event_day 與 event_time）
+  
+  // !!!假設前端 date 格式為 "2026-05-20 14:00" 或是分開的(html預設的日期時間選擇器)
+  // 這裡安全起見，直接把整串字串送給後端的 date，time 留空或簡單切割
+  const parts = date.split(' ');
+  const event_day = parts[0] ? parts[0].replace(/\//g, '-') : date; // 轉換為 YYYY-MM-DD
+  const event_time = parts[1] || "00:00";
 
-  if (editingActId !== null) {
-    // Edit existing
-    const idx = ACTS.findIndex(x => x.id === editingActId);
-    if (idx !== -1) {
-      ACTS[idx] = { ...ACTS[idx], title, date, loc, quota, max, emoji, color, tags, desc };
+  // 整理要傳送給後端的資料包（對應您 Flask 的變數名稱）
+  const payload = {
+    title: title,
+    date: event_day,
+    time: event_time,
+    loc: loc,
+    max: max,
+    student_capacity: max, // 同步容量
+    emoji: emoji,
+    color: color,
+    description: desc,
+    category_id: 1 // 預設分類 ID，可根據需求調整
+  };
+
+  try {
+    if (editingActId !== null) {
+      // === 編輯現有活動 (PUT) ===
+      const res = await fetch(`${API_BASE}/api/events/${editingActId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '修改失敗');
+
+      document.getElementById('activityFormModal').classList.remove('open');
+      showAdminSuccess('活動已更新', `「${title}」的資訊已成功同步至資料庫。`);
+    } else {
+      // === 新增全新活動 (POST) ===
+      const res = await fetch(`${API_BASE}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '新增失敗');
+
+      document.getElementById('activityFormModal').classList.remove('open');
+      showAdminSuccess('活動已新增', `「${title}」已成功寫入資料庫活動列表。`);
     }
-    document.getElementById('activityFormModal').classList.remove('open');
-    showAdminSuccess('活動已更新', `「${title}」的資訊已成功更新。`);
-  } else {
-    // Add new
-    const newAct = { id: nextActId++, emoji, color, title, date, loc, tags, quota, max, desc };
-    ACTS.push(newAct);
-    document.getElementById('activityFormModal').classList.remove('open');
-    showAdminSuccess('活動已新增', `「${title}」已成功新增至活動列表。`);
-  }
 
-  renderAdminDashboard();
-  renderAdminRegistrations();
-  renderCards(); // update user view too
+    // 重新載入資料庫最新資料並重新渲染 UI
+    await loadEvents();
+    renderAdminRegistrations();
+
+  } catch (e) {
+    console.error(e);
+    alert('操作失敗：' + e.message);
+  }
 }
+
 
 function closeActivityForm() {
   document.getElementById('activityFormModal').classList.remove('open');
@@ -955,22 +1066,64 @@ function closeDeleteModal() {
   document.getElementById('adminDeleteModal').classList.remove('open');
   deleteTargetId = null;
 }
-
 async function confirmDeleteActivity() {
   if (deleteTargetId === null) return;
+  
   const a = ACTS.find(x => x.id === deleteTargetId);
-  ACTS = ACTS.filter(x => x.id !== deleteTargetId);
-  delete REGISTRATIONS[deleteTargetId];
-  // Also remove from user's myActivities if present
-  myActivities = myActivities.filter(m => m.id !== deleteTargetId);
-  document.getElementById('adminDeleteModal').classList.remove('open');
-  showAdminSuccess('活動已刪除', `「${a.title}」已永久刪除。`);
-  deleteTargetId = null;
-  renderAdminDashboard();
-  renderAdminRegistrations();
-  await loadEvents();
-}
+  
+  try {
+    // === 💡 修正 1：拿掉多餘的 /api ===
+    const res = await fetch(`${API_BASE}/events/${deleteTargetId}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    
+    if (!res.ok) throw new Error(data.error || '刪除失敗');
 
+    // 關閉刪除確認彈窗
+    document.getElementById('adminDeleteModal').classList.remove('open');
+    showAdminSuccess('活動已刪除', `「${a ? a.title : '該活動'}」已從資料庫永久刪除。`);
+    
+    // 重新從資料庫載入最新活動列表
+    await loadEvents();
+    
+    // 同步更新後台的記憶體資料（讓便當人數與名單同步清空）
+    await loadAllRegistrations(); 
+    
+    // === 💡 修正 2：同時刷新「總覽主頁」與「報名分頁」，確保兩邊卡片都同步消失 ===
+    renderAdminDashboard();
+    renderAdminRegistrations();
+
+  } catch (e) {
+    console.error(e);
+    alert('刪除失敗：' + e.message);
+  }
+
+  deleteTargetId = null;
+}
+// 初始化時綁定搜尋與篩選事件 不重整網頁的即時活動查詢
+document.getElementById('searchKeyword').addEventListener('input', doFilter);
+document.getElementById('filterTag').addEventListener('change', doFilter);
+
+function doFilter() {
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const selectedTag = document.getElementById('filterTag').value;
+
+    const filteredResult = window.allEvents.filter(act => {
+        // 關鍵字比對：名稱、地點、或是描述
+        const matchText = act.title.toLowerCase().includes(keyword) || 
+                          act.loc.toLowerCase().includes(keyword) ||
+                          (act.description && act.description.toLowerCase().includes(keyword));
+        
+        // 標籤比對
+        const matchTag = selectedTag === 'all' || act.tags === selectedTag;
+
+        return matchText && matchTag;
+    });
+
+    // 呼叫你原本渲染列表的 function，把 filteredResult 丢進去重新畫出畫面
+    renderActivityList(filteredResult); 
+}
 // =================== ADMIN: SUCCESS MODAL ===================
 function showAdminSuccess(title, msg) {
   document.getElementById('adminSuccessTitle').textContent = title;
@@ -1079,10 +1232,10 @@ async function loadEvents() {
       tags: d.tags ? [d.tags] : [],
       quota: d.quota || 0,
       max: d.student_capacity + d.max,
-      desc: '' // backend currently has no desc
+      desc: d.description || '' // backend currently has no desc
     }));
   
-    
+    window.allEvents = [...ACTS];
     renderCards();
     renderBanner();
 
@@ -1093,12 +1246,101 @@ async function loadEvents() {
     console.error('Failed to load events from DB:', error);
   }
 }
+// === 雙重監聽：無論是輸入文字還是切換下拉選單，都觸發 doFilter ===
+document.getElementById('searchKeyword').addEventListener('input', doFilter);
 
+if (document.getElementById('filterTag')) {
+    document.getElementById('filterTag').addEventListener('change', doFilter);
+}
+
+// === 核心複合篩選 Function ===
+function doFilter() {
+    // 1. 取得並處理關鍵字
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    
+    // 2. 取得並處理下拉選單分類
+    const filterTagEl = document.getElementById('filterTag');
+    const selectedTag = filterTagEl ? filterTagEl.value : 'all';
+
+    // 3. 如果兩個欄位都是空的/預設狀態，直接還原全部活動
+    if (!keyword && selectedTag === 'all') {
+        ACTS = [...window.allEvents];
+    } else {
+        // 4. 開始複合過濾
+        ACTS = window.allEvents.filter(act => {
+            // 條件 A：關鍵字比對 (名稱、地點、描述、標籤)
+            const matchText = !keyword || (
+                (act.title && act.title.toLowerCase().includes(keyword)) || 
+                (act.loc && act.loc.toLowerCase().includes(keyword)) ||
+                (act.desc && act.desc.toLowerCase().includes(keyword)) ||
+                (act.tags && act.tags.toLowerCase().includes(keyword))
+            );
+            
+            // 條件 B：下拉選單標籤比對
+            const matchTag = selectedTag === 'all' || (act.tags && act.tags.includes(selectedTag));
+
+            // 同時滿足才留下來
+            return matchText && matchTag;
+        });
+    }
+
+    // 5. 關鍵：重新呼叫你原本渲染卡片的 function，讓畫面更新
+    renderCards();
+}
 // =================== INIT ===================
 loadEvents();
 showUserInterface(); // default to user interface
 
 // 頁面載入後自動開啟登入彈窗
-window.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('authModal').classList.add('open');
+// === 調整後的事件綁定：確保網頁加載完後執行 ===
+document.addEventListener('DOMContentLoaded', () => {
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchKeyword');
+    const filterSelect = document.getElementById('filterTag');
+
+    // 💡 1. 點擊「搜尋按鈕」時才觸發搜尋
+    if (searchBtn) {
+        searchBtn.addEventListener('click', doFilter);
+    }
+
+    // 💡 2. 在輸入框按下「Enter 鍵」時也觸發搜尋
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // 防止表單預設重整行為
+                doFilter();
+            }
+        });
+    }
+
+    // 💡 3. 下拉選單保持不變（切換分類時直接連動）
+    if (filterSelect) {
+        filterSelect.addEventListener('change', doFilter);
+    }
 });
+
+// === 核心複合篩選 Function (維持精準欄位對齊) ===
+function doFilter() {
+    if (!window.allEvents) return;
+
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const selectedTag = document.getElementById('filterTag').value;
+
+    // 開始過濾
+    ACTS = window.allEvents.filter(act => {
+        // 關鍵字比對
+        const matchText = !keyword || (
+            (act.title && act.title.toLowerCase().includes(keyword)) || 
+            (act.loc && act.loc.toLowerCase().includes(keyword)) ||
+            (act.desc && act.desc.toLowerCase().includes(keyword))
+        );
+        
+        // 標籤比對
+        const matchTag = selectedTag === 'all' || act.tags === selectedTag;
+
+        return matchText && matchTag;
+    });
+
+    // 重新繪製畫面卡片
+    renderCards(); 
+}
