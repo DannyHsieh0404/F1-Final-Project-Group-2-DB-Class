@@ -37,7 +37,10 @@ def get_events():
             SELECT
                 e.event_id as id, 
                 c.category_name as tags,
-                e.title, 
+                e.title,
+                e.description,
+                e.emoji, 
+                e.color, 
                 e.event_day as date, 
                 e.event_time as time,
                 e.location as loc, 
@@ -343,27 +346,27 @@ def create_event():
     if not data:
         return jsonify({"error": "缺少活動資料"}), 400
 
+    # === 這裡需要修改：拿掉 or 判斷，改用精準欄位，並將 student_capacity 預設改為 0 ===
     title = data.get('title')
-    category_id = data.get('category_id') or data.get('category')  # 支援前端傳來的 key 名稱
-    event_day = data.get('date')                                   # 前端通常傳 date
+    category_id = data.get('category_id', 1) 
+    event_day = data.get('date')               
     event_time = data.get('time')
-    location = data.get('loc') or data.get('location')
-    guest_capacity = data.get('max') or data.get('guest_capacity')
-    student_capacity = data.get('student_capacity', guest_capacity) # 若沒傳則同步
+    location = data.get('loc')
+    guest_capacity = data.get('max')
+    student_capacity = data.get('student_capacity', 0)
     
-    # 預留未來資料庫增欄的視覺與描述欄位（若前端有傳就寫入，沒傳就給空字串或預設）
     description = data.get('description', '')
     emoji = data.get('emoji', '📅')
     color = data.get('color', '#4f46e5')
 
-    if not title:
-        return jsonify({"error": "活動標題為必填項目"}), 400
+    # === 這裡需要修改：加強必填檢查，防止前端漏傳導到寫入失敗 ===
+    if not title or not event_day or not location:
+        return jsonify({"error": "活動標題、日期時間與地點為必填項目"}), 400
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         
-        # 這裡的 SQL 欄位順序會依據你們 Event 表的結構調整。
         query = """
             INSERT INTO Event (category_id, title, description, emoji, color, event_day, event_time, location, guest_capacity, student_capacity)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
