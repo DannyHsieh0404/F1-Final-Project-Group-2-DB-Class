@@ -37,7 +37,10 @@ def get_events():
             SELECT
                 e.event_id as id, 
                 c.category_name as tags,
-                e.title, 
+                e.title,
+                e.description,
+                e.emoji, 
+                e.color, 
                 e.event_day as date, 
                 e.event_time as time,
                 e.location as loc, 
@@ -343,27 +346,27 @@ def create_event():
     if not data:
         return jsonify({"error": "缺少活動資料"}), 400
 
+    # === 這裡需要修改：拿掉 or 判斷，改用精準欄位，並將 student_capacity 預設改為 0 ===
     title = data.get('title')
-    category_id = data.get('category_id') or data.get('category')  # 支援前端傳來的 key 名稱
-    event_day = data.get('date')                                   # 前端通常傳 date
+    category_id = data.get('category_id', 1) 
+    event_day = data.get('date')               
     event_time = data.get('time')
-    location = data.get('loc') or data.get('location')
-    guest_capacity = data.get('max') or data.get('guest_capacity')
-    student_capacity = data.get('student_capacity', guest_capacity) # 若沒傳則同步
+    location = data.get('loc')
+    guest_capacity = data.get('max')
+    student_capacity = data.get('student_capacity', 0)
     
-    # 預留未來資料庫增欄的視覺與描述欄位（若前端有傳就寫入，沒傳就給空字串或預設）
     description = data.get('description', '')
     emoji = data.get('emoji', '📅')
     color = data.get('color', '#4f46e5')
 
-    if not title:
-        return jsonify({"error": "活動標題為必填項目"}), 400
+    # === 這裡需要修改：加強必填檢查，防止前端漏傳導到寫入失敗 ===
+    if not title or not event_day or not location:
+        return jsonify({"error": "活動標題、日期時間與地點為必填項目"}), 400
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         
-        # 這裡的 SQL 欄位順序會依據你們 Event 表的結構調整。
         query = """
             INSERT INTO Event (category_id, title, description, emoji, color, event_day, event_time, location, guest_capacity, student_capacity)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -402,16 +405,16 @@ def update_event(event_id):
             WHERE event_id = ?
         """
         cursor.execute(query, (
-            data.get('category_id') or data.get('category'),
+            data.get('category_id', 1),
             data.get('title'),
             data.get('description', ''),
             data.get('emoji', '📅'),
             data.get('color', '#4f46e5'),
             data.get('date'),
             data.get('time'),
-            data.get('loc') or data.get('location'),
-            data.get('max') or data.get('guest_capacity'),
-            data.get('student_capacity'),
+            data.get('loc'),
+            data.get('max'),
+            data.get('student_capacity', 0),
             event_id
         ))
         conn.commit()
@@ -430,15 +433,21 @@ def delete_event(event_id):
     try:
         cursor = conn.cursor()
         
-        # 先檢查活動是否存在
         cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
         if not cursor.fetchone():
             return jsonify({"error": "找不到該活動，無法刪除"}), 404
 
-        # 1. 先刪除（或取消）該活動關聯的報名紀錄，避免外鍵衝突造成資料庫報錯
+        # 🛠️【必須修正的級聯刪除順序】
+        # 1. 先刪除關聯的飲食需求 (Dietary_Req)
+        cursor.execute("""
+            DELETE FROM Dietary_Req 
+            WHERE registration_id IN (SELECT registration_id FROM Registration WHERE event_id = ?)
+        """, (event_id,))
+        
+        # 2. 再刪除關聯的報名紀錄 (Registration)
         cursor.execute("DELETE FROM Registration WHERE event_id = ?", (event_id,))
         
-        # 2. 真正刪除活動本體
+        # 3. 最後才刪除活動本體 (Event)
         cursor.execute("DELETE FROM Event WHERE event_id = ?", (event_id,))
         
         conn.commit()

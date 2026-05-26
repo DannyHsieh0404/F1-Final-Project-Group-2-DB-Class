@@ -18,18 +18,34 @@
 
     <div class="screens-wrap">
 
-      <!-- SCREEN 1: ACTIVITIES -->
-      <div class="screen active" id="screen-events">
+<div class="screen active" id="screen-events">
         <div class="page-header">
           <h1>探索活動</h1>
           <p>找到屬於你的精彩體驗</p>
         </div>
+        
         <div class="banner-wrap">
-
           <div class="banner-scroll" id="bannerScroll"></div>
           <div class="banner-dot"></div>
-          
         </div>
+        
+        <div class="search-filter-bar" style="padding: 16px 32px 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          
+          <div style="display: flex; flex: 2; min-width: 250px; gap: 4px;">
+            <input type="text" id="searchKeyword" placeholder="🔍 搜尋活動名稱、地點或描述..." style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px 0 0 10px; font-size: 14px; margin-right: -4px;">
+            <button id="searchBtn" style="padding: 10px 16px; background: var(--primary, #4f46e5); color: white; border: none; border-radius: 0 10px 10px 0; font-size: 14px; cursor: pointer; font-weight: 500;">搜尋</button>
+          </div>
+
+          <select id="filterTag" style="flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white;">
+            <option value="all">全部標籤</option>
+            <option value="體育">🏀 體育</option>
+            <option value="藝術">🎨 藝術</option>
+            <option value="音樂">🎵 音樂</option>
+            <option value="講座">🧠 講座</option>
+            <option value="資訊">💻 資訊</option>
+          </select>
+        </div>
+
         <div class="section-title">所有活動</div>
         <div class="activity-list"></div>
       </div>
