@@ -367,7 +367,7 @@ function switchAuthTab(tab) {
 async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value.trim();
-  if (!id || !pw) return alert('請填寫帳號與密碼');
+  if (!id || !pw) return alert('請填寫學號與密碼');
 
   try {
     const res = await fetch(`${API_BASE}/login`, {
@@ -404,28 +404,26 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const account = document.getElementById('rId').value.trim();
+  const user_id = document.getElementById('rId').value.trim();  // 學號
   const name  = document.getElementById('rName').value.trim();
   const phone = document.getElementById('rPhone').value.trim();
   const email = document.getElementById('rEmail').value.trim();
   const dept  = document.getElementById('rDept').value.trim();
-  
-  // === 1. 修改這裡：去抓取 HTML 畫面上密碼輸入框的值 ===
-  // 這裡假設你的密碼輸入框 id 是 'rPw'（如果不是，請改成你 HTML 裡設定的 id）
-  const pw = document.getElementById('rPw').value.trim(); 
+  const pw = document.getElementById('rPw').value.trim();
+
+  if (!user_id) return alert('請填寫學號');
+  if (!pw)      return alert('請填寫密碼');
 
   try {
     const res = await fetch(`${API_BASE}/register_user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-          id: account, 
-          pw: pw, 
+          id: user_id,       // 學號
+          user_id: user_id,  // 主鍵
+          pw,
           role: selectedAuthRole,
-          name: name,
-          phone: phone,
-          email: email,
-          dept: dept
+          name, phone, email, dept
       })
     });
     
@@ -435,7 +433,7 @@ async function doRegister() {
         return;
     }
 
-    currentUser = { id: account, id_db: account, name, phone, email, dept };
+    currentUser = { id: user_id, id_db: user_id, name, phone, email, dept };
     currentRole = selectedAuthRole;
 
     if (currentRole === 'admin') {
@@ -535,13 +533,22 @@ async function toggleProfileEdit() {
     
     // Save to database
     try {
-        await fetch(`${API_BASE}/user`, {
+        const res = await fetch(`${API_BASE}/user`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentUser) 
+            body: JSON.stringify({
+                id_db: currentUser.id_db,
+                name:  currentUser.name,
+                phone: currentUser.phone,
+                email: currentUser.email,
+                dept:  currentUser.dept
+            })
         });
+        const result = await res.json();
+        if (!res.ok) alert('儲存失敗：' + (result.error || '未知錯誤'));
     } catch(e) {
         console.error("更新失敗", e);
+        alert('網路錯誤，儲存失敗');
     }
 
     renderFields();
@@ -1192,13 +1199,22 @@ async function toggleAdminProfileEdit() {
     
     // Save to database
     try {
-        await fetch(`${API_BASE}/user`, {
+        const res = await fetch(`${API_BASE}/user`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentUser) 
+            body: JSON.stringify({
+                id_db: currentUser.id_db,
+                name:  currentUser.name,
+                phone: currentUser.phone,
+                email: currentUser.email,
+                dept:  currentUser.dept
+            })
         });
+        const result = await res.json();
+        if (!res.ok) alert('儲存失敗：' + (result.error || '未知錯誤'));
     } catch(e) {
         console.error("更新失敗", e);
+        alert('網路錯誤，儲存失敗');
     }
 
     renderAdminFields();

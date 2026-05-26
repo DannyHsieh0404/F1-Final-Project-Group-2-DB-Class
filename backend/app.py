@@ -225,7 +225,7 @@ def login():
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM User WHERE email = ?", (account,))
+        cursor.execute("SELECT * FROM User WHERE user_id = ?", (account,))
         user = cursor.fetchone()
 
         if user:
@@ -247,7 +247,7 @@ def login():
                 return jsonify({
                     "success": True, 
                     "user": {
-                        "id": user_dict['email'],      
+                        "id": user_dict['user_id'],      
                         "id_db": user_dict['user_id'], 
                         "name": user_dict['name'],
                         "phone": user_dict['phone'],
@@ -266,35 +266,51 @@ def login():
 @app.route('/api/register_user', methods=['POST'])
 def register_user():
     data = request.json
-    account = data.get('id')  # 帳號為 email
+    user_id  = data.get('user_id')
+    account = data.get('id')  
     password = data.get('pw')
 
+    if not user_id:
+        user_id = account
+
+    if not user_id or not password:
+        return jsonify({"error": "請填寫學號與密碼"}), 400
+    
     # 這裡成功產生了安全的雜湊密碼
     hashed_password = generate_password_hash(password)
 
-    role = data.get('role')
+    role  = data.get('role')
+    name  = data.get('name', '新使用者')
+    dept  = data.get('dept', '未設定')
+    phone = data.get('phone', '')
+    email = data.get('email', '')
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         # 檢查是否已存在
-        cursor.execute("SELECT user_id FROM User WHERE email = ?", (account,))
+        cursor.execute("SELECT user_id FROM User WHERE user_id  = ?", (user_id,))
         if cursor.fetchone():
             return jsonify({"error": "此帳號(Email)已被註冊"}), 400
 
         real_role = 'Organizer' if role == 'admin' else 'Student'
 
+        name = data.get('name', '新使用者')
+        dept = data.get('dept', '未設定')
+        phone = data.get('phone', '')
+
         query = """
-            INSERT INTO User (email, password, role, name, department, phone)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO User (user_id, email, password, role, name, department, phone)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """
-        # === 核心修正點 ===
-        # 這裡的第二個參數必須帶入 剛剛加密好的 hashed_password，而不是原始的 password
-        cursor.execute(query, (account, hashed_password, real_role, "新使用者", "未設定", ""))
+        cursor.execute(query, (user_id, email, hashed_password, real_role, name, dept, phone))
         conn.commit()
-        return jsonify({"success": True})
+        return jsonify({"success": True, "user_id": user_id})
     except Exception as e:
         conn.rollback()
+        print("ERROR:", e) 
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
