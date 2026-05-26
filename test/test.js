@@ -903,10 +903,11 @@ function openEditActivity(id) {
   document.getElementById('activityFormModal').classList.add('open');
 }
 
-function submitActivityForm() {
+// 修改「新增／編輯活動」的表單送出
+async function submitActivityForm() {
   const title = document.getElementById('af_title').value.trim();
-  const date  = document.getElementById('af_date').value.trim();
-  const loc   = document.getElementById('af_loc').value.trim();
+  const date   = document.getElementById('af_date').value.trim();
+  const loc    = document.getElementById('af_loc').value.trim();
   const quota = parseInt(document.getElementById('af_quota').value) || 0;
   const max   = parseInt(document.getElementById('af_max').value)   || 100;
   const emoji = document.getElementById('af_emoji').value;
@@ -916,28 +917,65 @@ function submitActivityForm() {
 
   if (!title || !date || !loc) return alert('請填寫活動名稱、日期時間與地點');
 
-  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : ['活動'];
+  // 將時間拆分（因為後端 SQLite 分開存 event_day 與 event_time）
+  
+  // !!!假設前端 date 格式為 "2026-05-20 14:00" 或是分開的(html預設的日期時間選擇器)
+  // 這裡安全起見，直接把整串字串送給後端的 date，time 留空或簡單切割
+  const parts = date.split(' ');
+  const event_day = parts[0] ? parts[0].replace(/\//g, '-') : date; // 轉換為 YYYY-MM-DD
+  const event_time = parts[1] || "00:00";
 
-  if (editingActId !== null) {
-    // Edit existing
-    const idx = ACTS.findIndex(x => x.id === editingActId);
-    if (idx !== -1) {
-      ACTS[idx] = { ...ACTS[idx], title, date, loc, quota, max, emoji, color, tags, desc };
+  // 整理要傳送給後端的資料包（對應您 Flask 的變數名稱）
+  const payload = {
+    title: title,
+    date: event_day,
+    time: event_time,
+    loc: loc,
+    max: max,
+    student_capacity: max, // 同步容量
+    emoji: emoji,
+    color: color,
+    description: desc,
+    category_id: 1 // 預設分類 ID，可根據需求調整
+  };
+
+  try {
+    if (editingActId !== null) {
+      // === 編輯現有活動 (PUT) ===
+      const res = await fetch(`${API_BASE}/api/events/${editingActId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '修改失敗');
+
+      document.getElementById('activityFormModal').classList.remove('open');
+      showAdminSuccess('活動已更新', `「${title}」的資訊已成功同步至資料庫。`);
+    } else {
+      // === 新增全新活動 (POST) ===
+      const res = await fetch(`${API_BASE}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '新增失敗');
+
+      document.getElementById('activityFormModal').classList.remove('open');
+      showAdminSuccess('活動已新增', `「${title}」已成功寫入資料庫活動列表。`);
     }
-    document.getElementById('activityFormModal').classList.remove('open');
-    showAdminSuccess('活動已更新', `「${title}」的資訊已成功更新。`);
-  } else {
-    // Add new
-    const newAct = { id: nextActId++, emoji, color, title, date, loc, tags, quota, max, desc };
-    ACTS.push(newAct);
-    document.getElementById('activityFormModal').classList.remove('open');
-    showAdminSuccess('活動已新增', `「${title}」已成功新增至活動列表。`);
-  }
 
-  renderAdminDashboard();
-  renderAdminRegistrations();
-  renderCards(); // update user view too
+    // 重新載入資料庫最新資料並重新渲染 UI
+    await loadEvents();
+    renderAdminRegistrations();
+
+  } catch (e) {
+    console.error(e);
+    alert('操作失敗：' + e.message);
+  }
 }
+
 
 function closeActivityForm() {
   document.getElementById('activityFormModal').classList.remove('open');
@@ -958,17 +996,31 @@ function closeDeleteModal() {
 
 async function confirmDeleteActivity() {
   if (deleteTargetId === null) return;
+  
   const a = ACTS.find(x => x.id === deleteTargetId);
-  ACTS = ACTS.filter(x => x.id !== deleteTargetId);
-  delete REGISTRATIONS[deleteTargetId];
-  // Also remove from user's myActivities if present
-  myActivities = myActivities.filter(m => m.id !== deleteTargetId);
-  document.getElementById('adminDeleteModal').classList.remove('open');
-  showAdminSuccess('活動已刪除', `「${a.title}」已永久刪除。`);
+  
+  try {
+    // === 刪除活動 (DELETE) ===
+    const res = await fetch(`${API_BASE}/api/events/${deleteTargetId}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    
+    if (!res.ok) throw new Error(data.error || '刪除失敗');
+
+    document.getElementById('adminDeleteModal').classList.remove('open');
+    showAdminSuccess('活動已刪除', `「${a ? a.title : '該活動'}」已從資料庫永久刪除。`);
+    
+    // 重新從資料庫載入最新活動列表並刷新畫面
+    await loadEvents();
+    renderAdminRegistrations();
+
+  } catch (e) {
+    console.error(e);
+    alert('刪除失敗：' + e.message);
+  }
+
   deleteTargetId = null;
-  renderAdminDashboard();
-  renderAdminRegistrations();
-  await loadEvents();
 }
 
 // =================== ADMIN: SUCCESS MODAL ===================

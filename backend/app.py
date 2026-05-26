@@ -402,16 +402,16 @@ def update_event(event_id):
             WHERE event_id = ?
         """
         cursor.execute(query, (
-            data.get('category_id') or data.get('category'),
+            data.get('category_id', 1),
             data.get('title'),
             data.get('description', ''),
             data.get('emoji', '📅'),
             data.get('color', '#4f46e5'),
             data.get('date'),
             data.get('time'),
-            data.get('loc') or data.get('location'),
-            data.get('max') or data.get('guest_capacity'),
-            data.get('student_capacity'),
+            data.get('loc'),
+            data.get('max'),
+            data.get('student_capacity', 0),
             event_id
         ))
         conn.commit()
@@ -430,15 +430,21 @@ def delete_event(event_id):
     try:
         cursor = conn.cursor()
         
-        # 先檢查活動是否存在
         cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
         if not cursor.fetchone():
             return jsonify({"error": "找不到該活動，無法刪除"}), 404
 
-        # 1. 先刪除（或取消）該活動關聯的報名紀錄，避免外鍵衝突造成資料庫報錯
+        # 🛠️【必須修正的級聯刪除順序】
+        # 1. 先刪除關聯的飲食需求 (Dietary_Req)
+        cursor.execute("""
+            DELETE FROM Dietary_Req 
+            WHERE registration_id IN (SELECT registration_id FROM Registration WHERE event_id = ?)
+        """, (event_id,))
+        
+        # 2. 再刪除關聯的報名紀錄 (Registration)
         cursor.execute("DELETE FROM Registration WHERE event_id = ?", (event_id,))
         
-        # 2. 真正刪除活動本體
+        # 3. 最後才刪除活動本體 (Event)
         cursor.execute("DELETE FROM Event WHERE event_id = ?", (event_id,))
         
         conn.commit()
