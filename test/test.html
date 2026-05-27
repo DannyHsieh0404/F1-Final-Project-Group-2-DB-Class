@@ -38,11 +38,17 @@
 
           <select id="filterTag" style="flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white;">
             <option value="all">All Tags</option>
-            <option value="體育">🏀 Sports</option>
-            <option value="藝術">🎨 Arts</option>
-            <option value="音樂">🎵 Music</option>
-            <option value="講座">🧠 Lectures</option>
-            <option value="資訊">💻 IT / Info</option>
+            <option value="🏀">🏀 Competetion</option>
+            <option value="🎨">🎨 Arts</option>
+            <option value="🎵">🎵 Music</option>
+            <option value="🌿">🌿 Eco / Environment</option>
+            <option value="💻">💻 IT / Info</option>
+            <option value="📸">📸 Photography</option>
+            <option value="🧠">🧠 Lectures</option>
+            <option value="🌏">🌏 Culture</option>
+            <option value="🏃">🏃 Sports & Exercise</option>
+            <option value="🎮">🎮 Gaming / Esports</option>
+            <option value="🍳">🍳 Lifestyle</option>
           </select>
         </div>
 
@@ -252,18 +258,18 @@
       <h2 id="actFormTitle">Add Event</h2>
       <p id="actFormSubtitle">Fill out event information</p>
       <div class="modal-form" style="gap:10px">
-        <input type="text" placeholder="活動名稱" id="af_title">
+        <input type="text" placeholder="Activity Name" id="af_title">
         <div style="display:flex;gap:8px">
-          <input type="text" placeholder="日期時間 (e.g. 2025/06/01 14:00)" id="af_date" style="flex:1">
-          <input type="text" placeholder="地點" id="af_loc" style="flex:1">
+          <input type="text" placeholder="Date & Time (e.g. 2025/06/01 14:00)" id="af_date" style="flex:1">
+          <input type="text" placeholder="Location" id="af_loc" style="flex:1">
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="已報名人數由系統自動計算">
-          <input type="number" placeholder="總名額" id="af_max" min="1" style="flex:1">
+          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="Automatically calculated">
+          <input type="number" placeholder="Total Quota" id="af_max" min="1" style="flex:1">
         </div>
         <div style="display:flex;gap:8px">
           <select id="af_emoji" style="flex:1;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:16px;background:var(--bg);color:var(--text);font-family:inherit">
-            <option value="🏀">🏀 Sports</option>
+            <option value="🏀">🏀 Competetion</option>
             <option value="🎨">🎨 Arts</option>
             <option value="🎵">🎵 Music</option>
             <option value="🌿">🌿 Eco / Environment</option>
@@ -282,8 +288,8 @@
             <option value="blue">Blue</option>
           </select>
         </div>
-        <input type="text" placeholder="標籤（逗號分隔，如：體育,競賽）" id="af_tags">
-        <textarea id="af_desc" placeholder="活動描述" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;line-height:1.6"></textarea>
+        <input type="text" placeholder="Tags（Divided by “,” eg: sports, competetion）" id="af_tags">
+        <textarea id="af_desc" placeholder="Description" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;line-height:1.6"></textarea>
         <button class="modal-submit" onclick="submitActivityForm()">Save</button>
         <button class="modal-cancel" onclick="closeActivityForm()">Cancel</button>
       </div>
