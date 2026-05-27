@@ -1021,7 +1021,7 @@ async function submitActivityForm() {
   try {
     if (editingActId !== null) {
       // === 編輯現有活動 (PUT) ===
-      const res = await fetch(`${API_BASE}/api/events/${editingActId}`, {
+      const res = await fetch(`${API_BASE}/events/${editingActId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1033,7 +1033,7 @@ async function submitActivityForm() {
       showAdminSuccess('Event Updated', `"${title}" has been successfully synchronized to the database.`);
     } else {
       // === 新增全新活動 (POST) ===
-      const res = await fetch(`${API_BASE}/api/events`, {
+      const res = await fetch(`${API_BASE}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

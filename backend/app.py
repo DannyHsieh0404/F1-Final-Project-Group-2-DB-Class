@@ -132,6 +132,9 @@ def get_my_activities(user_id):
                 r.registration_id,
                 e.event_id as id,
                 e.title,
+                e.description,
+                e.emoji, 
+                e.color, 
                 e.event_day as date,
                 r.status,
                 d.dietary_req
