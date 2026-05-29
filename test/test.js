@@ -923,7 +923,8 @@ async function saveActivity() {
         category_id: 1,       // 預設分類分類ID
         description: "",      // 預設詳細描述
         emoji: "📅",           // 預設卡片圖示
-        color: "blue"         // 預設卡片顏色
+        color: "blue",        // 預設卡片顏色
+        host_id: currentUser.id_db
     };
 
     try {
@@ -1015,7 +1016,8 @@ async function submitActivityForm() {
     emoji: emoji,
     color: color,
     description: desc,
-    category_id: 1 // 預設分類 ID，可根據需求調整
+    category_id: 1 ,// 預設分類 ID，可根據需求調整
+    host_id: currentUser.id_db
   };
 
   try {
@@ -1246,7 +1248,7 @@ async function loadEvents() {
       loc: d.loc,
       tags: d.tags ? [d.tags] : [],
       quota: d.quota || 0,
-      max: d.student_capacity + d.max,
+      max: d.student_capacity,
       desc: d.description || '' // backend currently has no desc
     }));
   

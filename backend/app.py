@@ -98,6 +98,18 @@ def register_event():
             cursor.execute("DELETE FROM Dietary_Req WHERE registration_id = ?", (registration_id,))
 
         else:
+            # 在 INSERT 之前加這段
+            cursor.execute("""
+                SELECT e.student_capacity,
+                    COUNT(r.registration_id) as current_count
+                FROM Event e
+                LEFT JOIN Registration r ON e.event_id = r.event_id AND r.status = 'Registered'
+                WHERE e.event_id = ?
+            GROUP BY e.event_id
+            """, (event_id,))
+            cap = cursor.fetchone()
+            if cap and cap[1] >= cap[0]:
+                return jsonify({"error": "Sorry, this event is fully booked!"}), 400
             # 2. If never registered before, proceed with standard insertion flow (using localtime to fix Taiwan timezone)
             query_reg = """
                 INSERT INTO Registration (event_id, user_id, status, attendance_flag, registration_date) 
@@ -237,14 +249,14 @@ def login():
                 user_dict = dict(user)
                 db_role = user_dict['role'] # The actual role label in the database: 'Organizer' or 'Student'
 
-            # 2. [Core Fix] Align the frontend role with the database role definition
-            # Based on registration logic: frontend passing 'admin' means trying to log into the 'Organizer' backend
-            expected_db_role = 'Organizer' if login_role == 'admin' else 'Student'
+                # 2. [Core Fix] Align the frontend role with the database role definition
+                # Based on registration logic: frontend passing 'admin' means trying to log into the 'Organizer' backend
+                expected_db_role = 'Organizer' if login_role == 'admin' else 'Student'
 
             # 3. [Critical Defense] Compare "the claimed role" with "the real database role"
-            if db_role != expected_db_role:
+                if db_role != expected_db_role:
                 # Password is correct, but role does not match! Precisely return 403 Forbidden to deny access.
-                return jsonify({"error": "Permission mismatch. You cannot log in as this role."}), 403
+                    return jsonify({"error": "Permission mismatch. You cannot log in as this role."}), 403
 
                 # 4. Security check passed, allow login
                 return jsonify({
@@ -368,7 +380,6 @@ def create_event():
     if not data:
         return jsonify({"error": "Missing event data"}), 400
 
-    # === Changes needed here: Remove 'or' logic, use precise fields, and default student_capacity to 0 ===
     title = data.get('title')
     category_id = data.get('category_id', 1) 
     event_day = data.get('date')               
@@ -376,24 +387,25 @@ def create_event():
     location = data.get('loc')
     guest_capacity = data.get('max')
     student_capacity = data.get('student_capacity', 0)
-    
     description = data.get('description', '')
     emoji = data.get('emoji', '📅')
     color = data.get('color', '#4f46e5')
+    host_id = data.get('host_id')
 
-# === Changes needed here: Enhance required field validation to prevent write failures from missing frontend data ===
-    if not title or not event_day or not location:
-        return jsonify({"error": "Event title, date, time, and location are required fields"}), 400
+    
+    if not title or not event_day or not location or not host_id:
+        return jsonify({"error": "Event title, date, location, and host are required"}), 400
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         
+        
         query = """
-            INSERT INTO Event (category_id, title, description, emoji, color, event_day, event_time, location, guest_capacity, student_capacity)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO Event (category_id, title, description, emoji, color, host_id, event_day, event_time, location, guest_capacity, student_capacity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        cursor.execute(query, (category_id, title, description, emoji, color, event_day, event_time, location, guest_capacity, student_capacity))
+        cursor.execute(query, (category_id, title, description, emoji, color, host_id, event_day, event_time, location, guest_capacity, student_capacity))
         conn.commit()
         return jsonify({"success": True, "message": "Event created successfully!", "event_id": cursor.lastrowid})
     except Exception as e:
