@@ -458,26 +458,47 @@ function closeAuth() { document.getElementById('authModal').classList.remove('op
 // =================== MY ACTIVITIES ===================
 function renderMine() {
   const el = document.getElementById('mine-content');
+  if (!el) return;
+
   if (!currentUser) {
     el.innerHTML = `<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Please log in first to view<br>your registered events</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')" style="margin-top:6px">Go to Login</button></div>`;
     return;
   }
-  if (!myActivities.length) {
+  if (!myActivities || !myActivities.length) {
     el.innerHTML = `<div class="empty-state"><i class="ti ti-mood-empty"></i><p>You haven't registered for any events yet</p><button class="lp-btn outline" onclick="switchTab(0)" style="margin-top:4px">Explore Events</button></div>`;
     return;
   }
-  el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => `
+
+  // 🟢 修正 1：建立安全的顏色對照表，防止 HEROCOLOR 未定義而當機
+  const safeHeroColor = (typeof HEROCOLOR !== 'undefined') ? HEROCOLOR : {
+    'green': '#e6f4ea',
+    'orange': '#feefe3',
+    'purple': '#f3e8ff',
+    'blue': '#e8f0fe',
+    '#4f46e5': '#e8f0fe'
+  };
+
+  el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => {
+    // 🟢 修正 2：對齊後端傳回來的膳食欄位名稱 (dietary_req)
+    const mealReq = m.dietary_req || m.meal || '';
+    const mealText = (mealReq === 'meat' || mealReq === 'Non-Vegetarian') ? '🍖 Non-Vegetarian' : '🌿 Vegetarian';
+
+    // 取得背景顏色，如果找不到就給個輕微的灰色預設值
+    const bgBg = safeHeroColor[m.color] || m.color || '#f3f4f6';
+
+    return `
     <div class="my-act-card">
-      <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
+      <div class="my-act-icon" style="background:${bgBg}">${m.emoji || '📅'}</div>
       <div class="my-act-info">
-        <h4>${m.title}</h4>
-        <p>${m.date} · ${m.meal==='meat'?'🍖 Non-Vegetarian':'🌿 Vegetarian'}</p>
+        <h4>${m.title || 'Untitled Event'}</h4>
+        <p>${m.date || ''} · ${mealText}</p>
       </div>
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
         <button class="cancel-small-btn" onclick="cancelFromMine(${m.id})">Cancel</button>
       </div>
-    </div>`).join('') + `</div>`;
+    </div>`;
+  }).join('') + `</div>`;
 }
 
 // =================== PROFILE (USER) ===================
@@ -901,85 +922,84 @@ function openAddActivity() {
   document.getElementById('activityFormModal').classList.add('open');
 }
 // =================== 💡 新增：儲存活動（支援新增與編輯） ===================
-async function saveActivity() {
-    // 1. 抓取表單輸入值
-    const title = document.getElementById('af_title').value.trim();
-    const date = document.getElementById('af_date').value.trim(); // 格式通常為 YYYY-MM-DD
-    const loc = document.getElementById('af_loc').value.trim();
-    const max = parseInt(document.getElementById('af_max').value.trim(), 10);
-
-    // 簡單驗證
-    if (!title || !date || !loc || isNaN(max)) {
-      return alert('Please fill in all required fields and ensure capacity is a number!');
-    }
-
-    // 2. 組裝要送給後端的 JSON 欄位（精準對齊 Flask 接收名稱）
-    const payload = {
-        title: title,
-        date: date,           // 後端會存入 event_day
-        time: "14:00",        // 如果前端沒做時間輸入框，先給預設值
-        loc: loc,             // 對應後端 location
-        max: max,             // 對應後端 guest_capacity
-        category_id: 1,       // 預設分類分類ID
-        description: "",      // 預設詳細描述
-        emoji: "📅",           // 預設卡片圖示
-        color: "blue",        // 預設卡片顏色
-        host_id: currentUser.id_db
-    };
-
-    try {
-        let res;
-        // 判斷當前是「編輯」還是「新增」狀態
-        if (editingActId !== null) {
-            // 💡 編輯：發送 PUT 請求
-            res = await fetch(`${API_BASE}/events/${editingActId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } else {
-            // 💡 新增：發送 POST 請求
-            res = await fetch(`${API_BASE}/events`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        }
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Save failed');
-
-        alert(data.message || 'Operation successful!');
-        
-        // 3. 關閉表單彈窗（請確保對應到你的 HTML 關閉 id 或是 class）
-        document.getElementById('adminActFormModal')?.classList.remove('open'); 
-
-        // 4. 全域重新載入最新數據並刷新管理員後台畫面
-        await loadEvents(); 
-        await loadAllRegistrations();
-        renderAdminDashboard();
-        renderAdminRegistrations();
-
-    } catch (err) {
-        console.error(err);
-        alert(err.message);
-    }
-}
 function openEditActivity(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
+  
   editingActId = id;
   document.getElementById('actFormTitle').textContent    = 'Edit Event';
   document.getElementById('actFormSubtitle').textContent = `Editing: ${a.title}`;
-  document.getElementById('af_title').value  = a.title;
-  document.getElementById('af_date').value   = a.date;
-  document.getElementById('af_loc').value    = a.loc;
-  document.getElementById('af_quota').value  = a.quota;
-  document.getElementById('af_max').value    = a.max;
-  document.getElementById('af_emoji').value  = a.emoji;
-  document.getElementById('af_color').value  = a.color;
-  document.getElementById('af_tags').value   = a.tags.join(',');
-  document.getElementById('af_desc').value   = a.desc;
+  
+  // 填入基本文字欄位
+  document.getElementById('af_title').value  = a.title || '';
+  document.getElementById('af_date').value   = (a.date && a.time) ? `${a.date} ${a.time}` : (a.date || '');
+  document.getElementById('af_loc').value    = a.loc || '';
+  document.getElementById('af_quota').value  = a.quota || 0;
+  document.getElementById('af_max').value    = a.max || 100;
+  
+  // 🔍 【除錯核心 1】直接在瀏覽器 Console 印出目前這筆活動在資料庫的真實欄位
+  console.log("=== 正在編輯活動的原始資料 ===");
+  console.log("活動名稱:", a.title);
+  console.log("資料庫中的 emoji 欄位值:", JSON.stringify(a.emoji));
+  console.log("資料庫中的 color 欄位值:", JSON.stringify(a.color));
+  console.log("資料庫中的 tags 欄位值:", JSON.stringify(a.tags));
+
+  // ======= 🛠️ 終極 Emoji 匹配與動態寫入 =======
+  const emojiSelect = document.getElementById('af_emoji');
+  let rawEmoji = a.emoji ? String(a.emoji).trim() : '🏀';
+  
+  // 檢查目前的下拉選單裡，有沒有這個 emoji 的 value
+  let emojiExists = Array.from(emojiSelect.options).some(opt => opt.value === rawEmoji);
+  
+  // 如果完全找不到匹配（可能包含了英文或其他髒資料，例如 "🏀 Competetion"）
+  if (!emojiExists && a.emoji) {
+    // 嘗試只切出第一個字元（純 Emoji 表情符號）再找一次
+    const singleEmoji = Array.from(rawEmoji)[0];
+    emojiExists = Array.from(emojiSelect.options).some(opt => opt.value === singleEmoji);
+    if (emojiExists) {
+      rawEmoji = singleEmoji;
+    }
+  }
+
+  // 【大招】如果經過上面的努力，選單還是不認識這個資料庫來的 Emoji，我們就當場「動態塞一個選項」給它，防死跳回預設！
+  if (!emojiExists) {
+    const newOpt = document.createElement('option');
+    newOpt.value = rawEmoji;
+    newOpt.textContent = rawEmoji;
+    emojiSelect.appendChild(newOpt);
+  }
+  emojiSelect.value = rawEmoji;
+
+
+  // ======= 🛠️ 終極 顏色 匹配與動態寫入 =======
+  const colorSelect = document.getElementById('af_color');
+  let rawColor = a.color ? String(a.color).trim() : 'blue';
+
+  // 防呆：如果是後端一開始自帶的 Hex 色碼，強轉成 HTML 看得懂的 blue
+  if (rawColor === '#4f46e5') {
+    rawColor = 'blue';
+  }
+
+  let colorExists = Array.from(colorSelect.options).some(opt => opt.value === rawColor);
+
+  // 【大招】如果選單不認識這個顏色（例如資料庫存的是其他的色碼或大小寫不對），當場動態塞入選項，絕不允許它跳回 Green！
+  if (!colorExists) {
+    const newOpt = document.createElement('option');
+    newOpt.value = rawColor;
+    newOpt.textContent = rawColor;
+    colorSelect.appendChild(newOpt);
+  }
+  colorSelect.value = rawColor;
+
+  
+  // 處理標籤與描述
+  if (Array.isArray(a.tags)) {
+    document.getElementById('af_tags').value = a.tags.join(',');
+  } else {
+    document.getElementById('af_tags').value = a.tags || '';
+  }
+  document.getElementById('af_desc').value   = a.description || a.desc || '';
+  
   document.getElementById('activityFormModal').classList.add('open');
 }
 
@@ -988,36 +1008,32 @@ async function submitActivityForm() {
   const title = document.getElementById('af_title').value.trim();
   const date   = document.getElementById('af_date').value.trim();
   const loc    = document.getElementById('af_loc').value.trim();
-  const quota = parseInt(document.getElementById('af_quota').value) || 0;
   const max   = parseInt(document.getElementById('af_max').value)   || 100;
+  
   const emoji = document.getElementById('af_emoji').value;
   const color = document.getElementById('af_color').value;
-  const tagsRaw = document.getElementById('af_tags').value.trim();
   const desc  = document.getElementById('af_desc').value.trim();
 
   if (!title || !date || !loc) return alert('Please fill in the event name, date/time, and location');
 
-  // 將時間拆分（因為後端 SQLite 分開存 event_day 與 event_time）
-  
-  // !!!假設前端 date 格式為 "2026-05-20 14:00" 或是分開的(html預設的日期時間選擇器)
-  // 這裡安全起見，直接把整串字串送給後端的 date，time 留空或簡單切割
+  // 將時間拆分
   const parts = date.split(' ');
-  const event_day = parts[0] ? parts[0].replace(/\//g, '-') : date; // 轉換為 YYYY-MM-DD
+  const event_day = parts[0] ? parts[0].replace(/\//g, '-') : date; 
   const event_time = parts[1] || "00:00";
 
-  // 整理要傳送給後端的資料包（對應您 Flask 的變數名稱）
+  // 整理要傳送給後端的資料包
   const payload = {
     title: title,
     date: event_day,
     time: event_time,
     loc: loc,
     max: max,
-    student_capacity: max, // 同步容量
-    emoji: emoji,
-    color: color,
+    student_capacity: max, 
+    emoji: emoji,        
+    color: color,        
     description: desc,
-    category_id: 1 ,// 預設分類 ID，可根據需求調整
-    host_id: currentUser.id_db
+    category_id: 1,
+    host_id: currentUser ? currentUser.id_db : 1 // 加強防呆，防止 currentUser 尚未載入
   };
 
   try {
@@ -1031,8 +1047,13 @@ async function submitActivityForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
 
-      document.getElementById('activityFormModal').classList.remove('open');
-      showAdminSuccess('Event Updated', `"${title}" has been successfully synchronized to the database.`);
+      document.getElementById('activityFormModal')?.classList.remove('open');
+      
+      if (typeof showAdminSuccess === 'function') {
+         showAdminSuccess('Event Updated', `"${title}" has been successfully synchronized to the database.`);
+      } else {
+         alert('Event Updated successfully!');
+      }
     } else {
       // === 新增全新活動 (POST) ===
       const res = await fetch(`${API_BASE}/events`, {
@@ -1043,20 +1064,116 @@ async function submitActivityForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Creation failed');
 
-      document.getElementById('activityFormModal').classList.remove('open');
-      showAdminSuccess('Event Created', `"${title}" has been successfully added to the database event list.`);
+      document.getElementById('activityFormModal')?.classList.remove('open');
+      
+      if (typeof showAdminSuccess === 'function') {
+         showAdminSuccess('Event Created', `"${title}" has been successfully added to the database.`);
+      } else {
+         alert('Event Created successfully!');
+      }
     }
 
-    // 重新載入資料庫最新資料並重新渲染 UI
-    await loadEvents();
-    renderAdminRegistrations();
+    // 重新載入最新資料
+    if (typeof loadEvents === 'function') await loadEvents();
+    if (typeof loadAllRegistrations === 'function') await loadAllRegistrations();
+    
+    // 重新渲染 UI 畫面
+    if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
+    if (typeof renderAdminRegistrations === 'function') renderAdminRegistrations();
+    if (typeof renderEvents === 'function') renderEvents(); // 同步更新前端探索列表
 
   } catch (e) {
     console.error(e);
     alert('Operation failed: ' + e.message);
   }
 }
+function closeActivityForm() {
+  document.getElementById('activityFormModal')?.classList.remove('open');
+  document.getElementById('adminActFormModal')?.classList.remove('open'); 
+}
 
+// =================== ADMIN: DELETE ===================
+function openDeleteModal(id) {
+  deleteTargetId = id;
+  const a = ACTS.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('adminDeleteMsg').textContent = `Are you sure you want to permanently delete "${a.title}"? This operation cannot be undone and all registration records will be cleared.`;
+  document.getElementById('adminDeleteModal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('adminDeleteModal')?.classList.remove('open');
+  deleteTargetId = null;
+}
+
+async function confirmDeleteActivity() {
+  if (deleteTargetId === null) return;
+  
+  const a = ACTS.find(x => x.id === deleteTargetId);
+  
+  try {
+    const res = await fetch(`${API_BASE}/events/${deleteTargetId}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    
+    if (!res.ok) throw new Error(data.error || 'Delete failed');
+
+    document.getElementById('adminDeleteModal')?.classList.remove('open');
+    if (typeof showAdminSuccess === 'function') {
+        showAdminSuccess('Event Deleted', `"${a ? a.title : 'The event'}" has been permanently removed.`);
+    } else {
+        alert('Event Deleted successfully!');
+    }
+    
+    await loadEvents();
+    await loadAllRegistrations(); 
+    
+    if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
+    if (typeof renderAdminRegistrations === 'function') renderAdminRegistrations();
+
+  } catch (e) {
+    console.error(e);
+    alert('Delete failed: ' + e.message);
+  }
+
+  deleteTargetId = null;
+}
+
+// 初始化時綁定搜尋與篩選事件 不重整網頁的即時活動查詢
+document.getElementById('searchKeyword')?.addEventListener('input', doFilter);
+document.getElementById('filterTag')?.addEventListener('change', doFilter);
+
+function doFilter() {
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const selectedTag = document.getElementById('filterTag').value;
+
+    // 確保全域活動變數存在，防範未載入完成時噴錯
+    const eventsToFilter = window.allEvents || window.ACTS || [];
+
+    const filteredResult = eventsToFilter.filter(act => {
+        // 關鍵字比對
+        const matchText = act.title.toLowerCase().includes(keyword) || 
+                          act.loc.toLowerCase().includes(keyword) ||
+                          (act.description && act.description.toLowerCase().includes(keyword));
+        
+        // 標籤安全比對：支援 act.tags 為字串或陣列的情況
+        let matchTag = false;
+        if (selectedTag === 'all') {
+            matchTag = true;
+        } else if (typeof act.tags === 'string') {
+            matchTag = act.tags === selectedTag;
+        } else if (Array.isArray(act.tags)) {
+            matchTag = act.tags.includes(selectedTag);
+        }
+
+        return matchText && matchTag;
+    });
+
+    if (typeof renderActivityList === 'function') {
+        renderActivityList(filteredResult); 
+    }
+}
 
 function closeActivityForm() {
   document.getElementById('activityFormModal').classList.remove('open');
@@ -1235,32 +1352,53 @@ async function toggleAdminProfileEdit() {
 async function loadEvents() {
   try {
     const res = await fetch(`${API_BASE}/events`);
-    if (!res.ok) throw new Error('API response not ok');
     const data = await res.json();
     
-    // Convert API data to matching ACTS structure
-    ACTS = data.map(d => ({
-      id: Number(d.id),
-      emoji: '📅', // default emoji since backend doesn't have it
-      color: 'blue', // default color
-      title: d.title,
-      date: `${d.date} ${d.time}`,
-      loc: d.loc,
-      tags: d.tags ? [d.tags] : [],
-      quota: d.quota || 0,
-      max: d.student_capacity,
-      desc: d.description || '' // backend currently has no desc
-    }));
-  
-    window.allEvents = [...ACTS];
-    renderCards();
-    renderBanner();
+    if (!res.ok) throw new Error(data.error || 'Failed to load events');
 
-    if (currentRole === 'admin') {
-      renderAdminDashboard();
-    }
-  } catch (error) {
-    console.error('Failed to load events from DB:', error);
+    // 🟢 核心修正：在這裡就把後端來的資料清洗乾淨，再存入全域變數 ACTS
+    ACTS = data.map(event => {
+      // 1. 處理標籤防呆（對齊後端的 category_name 文字）
+      let formattedTags = [];
+      if (event.tags) {
+        if (Array.isArray(event.tags)) {
+          formattedTags = event.tags;
+        } else {
+          // 如果後端傳來的是字串 "Seminar"，我們幫它對齊前端 HTML 選項的文字
+          let tagText = String(event.tags).trim();
+          if (tagText === 'Seminar' || tagText === 'Lectures') tagText = '🧠 Lectures';
+          if (tagText === 'IT' || tagText === 'Info') tagText = '💻 IT / Info';
+          formattedTags = [tagText];
+        }
+      } else {
+        formattedTags = ['🧠 Lectures']; // 預設安全分類
+      }
+
+      // 2. 對齊 Emoji（如果資料庫傳來網頁不認識的 '📅'，我們在列表上給個好看的對應）
+      let displayEmoji = event.emoji || '📅';
+
+      return {
+        id: event.id,
+        title: event.title,
+        description: event.description || '',
+        emoji: displayEmoji,
+        color: event.color || 'blue', // 後端傳來小寫 "blue"，對齊 HTML
+        date: event.date,
+        time: event.time || '00:00',
+        loc: event.loc,
+        max: event.max || 100,
+        student_capacity: event.student_capacity || event.max || 100,
+        quota: event.quota || 0,
+        tags: formattedTags // 這裡百分之百保證是陣列了！
+      };
+    });
+
+    // 🟢 確保資料清洗完畢後，呼叫你原本的渲染功能
+    if (typeof renderCards === 'function') renderCards();
+    if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
+
+  } catch (e) {
+    console.error("載入活動清單時發生錯誤:", e);
   }
 }
 // === 雙重監聽：無論是輸入文字還是切換下拉選單，都觸發 doFilter ===

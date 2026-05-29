@@ -414,7 +414,6 @@ def create_event():
     finally:
         conn.close()
 
-
 # 10. Edit Event (PUT /api/events/<int:event_id>)
 @app.route('/api/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
@@ -426,12 +425,40 @@ def update_event(event_id):
     try:
         cursor = conn.cursor()
         
-        # Check if the event exists first
-        cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
-        if not cursor.fetchone():
+        # 1. 先檢查該活動是否存在，並順便取出原本的資料
+        cursor.execute("SELECT emoji, color FROM Event WHERE event_id = ?", (event_id,))
+        existing_event = cursor.fetchone()
+        if not existing_event:
             return jsonify({"error": "Event not found, modification failed"}), 404
+            
+        old_emoji = existing_event[0]
+        old_color = existing_event[1]
 
-        # Updates for description, emoji, and color are also reserved here
+        # 2. 接收並對齊前端的欄位名稱（精準對應前端的 payload）
+        title = data.get('title')
+        category_id = data.get('category_id', 1) 
+        event_day = data.get('date')               # 前端傳的是 date
+        event_time = data.get('time')              # 前端傳的是 time
+        location = data.get('loc')                 # 前端傳的是 loc
+        guest_capacity = data.get('max')           # 前端傳的是 max
+        student_capacity = data.get('student_capacity', guest_capacity) # 防呆同步
+        description = data.get('description', '')
+
+        # 3. 嚴格防空機制：如果前端傳來的是空，就保留原本資料庫裡的 emoji
+        input_emoji = data.get('emoji')
+        if not input_emoji or str(input_emoji).strip() == "":
+            emoji_to_save = old_emoji if old_emoji else '📅'
+        else:
+            emoji_to_save = input_emoji
+
+        # 4. 顏色防呆處理
+        input_color = data.get('color')
+        if not input_color or str(input_color).strip() == "":
+            color_to_save = old_color if old_color else '#4f46e5'
+        else:
+            color_to_save = input_color
+
+        # 5. 執行更新（嚴格對齊 SQL 欄位與 Python 變數順序）
         query = """
             UPDATE Event 
             SET category_id = ?, title = ?, description = ?, emoji = ?, color = ?, 
@@ -439,17 +466,17 @@ def update_event(event_id):
             WHERE event_id = ?
         """
         cursor.execute(query, (
-            data.get('category_id', 1),
-            data.get('title'),
-            data.get('description', ''),
-            data.get('emoji', '📅'),
-            data.get('color', '#4f46e5'),
-            data.get('date'),
-            data.get('time'),
-            data.get('loc'),
-            data.get('max'),
-            data.get('student_capacity', 0),
-            event_id
+            category_id,       # 1. category_id
+            title,             # 2. title
+            description,       # 3. description
+            emoji_to_save,     # 4. emoji
+            color_to_save,     # 5. color
+            event_day,         # 6. event_day
+            event_time,        # 7. event_time
+            location,          # 8. location
+            guest_capacity,    # 9. guest_capacity
+            student_capacity,  # 10. student_capacity
+            event_id           # 11. WHERE event_id
         ))
         conn.commit()
         return jsonify({"success": True, "message": "Event updated successfully!"})
@@ -458,7 +485,6 @@ def update_event(event_id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
-
 
 # 11. Delete Event (DELETE /api/events/<int:event_id>)
 @app.route('/api/events/<int:event_id>', methods=['DELETE'])
