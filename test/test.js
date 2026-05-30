@@ -44,6 +44,7 @@ let myActivities = [];
 let currentDetailId = null;
 let selectedMeal = null;
 let mealModalMode = 'register'; // 'register' | 'update'
+let mealModalMode = 'register'; // 'register' | 'update'
 let pendingAfterAuth = false;
 let cancelTargetId = null;
 let profileEditing = false;
@@ -59,7 +60,11 @@ function isDesktop() { return window.innerWidth >= 900; }
 
 function applyLayout() {
   const logo = document.getElementById('navLogo');
+  const logo = document.getElementById('navLogo');
   const adminLogo = document.getElementById('adminNavLogo');
+  const app = document.getElementById('app');
+  const mainNav = document.getElementById('mainNav');
+  const adminNav = document.getElementById('adminNav');
   const app = document.getElementById('app');
   const mainNav = document.getElementById('mainNav');
   const adminNav = document.getElementById('adminNav');
@@ -70,9 +75,15 @@ function applyLayout() {
     if (app) app.style.gridTemplateColumns = 'var(--sidebar-w) 1fr';
     if (mainNav) mainNav.style.order = '-1';
     if (adminNav) adminNav.style.order = '-1';
+    if (app) app.style.gridTemplateColumns = 'var(--sidebar-w) 1fr';
+    if (mainNav) mainNav.style.order = '-1';
+    if (adminNav) adminNav.style.order = '-1';
   } else {
     if (logo) logo.style.display = 'none';
     if (adminLogo) adminLogo.style.display = 'none';
+    if (app) app.style.gridTemplateColumns = '';
+    if (mainNav) mainNav.style.order = '';
+    if (adminNav) adminNav.style.order = '';
     if (app) app.style.gridTemplateColumns = '';
     if (mainNav) mainNav.style.order = '';
     if (adminNav) adminNav.style.order = '';
@@ -84,6 +95,16 @@ applyLayout();
 
 // =================== INTERFACE SWITCH ===================
 function showUserInterface() {
+  const userApp = document.getElementById('userApp');
+  const adminApp = document.getElementById('adminApp');
+  const mainNav = document.getElementById('mainNav');
+  const adminNav = document.getElementById('adminNav');
+
+  userApp.style.display = 'contents';
+  adminApp.style.display = 'none';
+  if (mainNav) mainNav.style.display = isDesktop() ? 'flex' : 'flex';
+  if (adminNav) adminNav.style.display = 'none';
+  applyLayout();
   const userApp = document.getElementById('userApp');
   const adminApp = document.getElementById('adminApp');
   const mainNav = document.getElementById('mainNav');
@@ -107,7 +128,18 @@ async function showAdminInterface() {
   if (mainNav) mainNav.style.display = 'none';
   if (adminNav) adminNav.style.display = 'flex';
 
+  const userApp = document.getElementById('userApp');
+  const adminApp = document.getElementById('adminApp');
+  const mainNav = document.getElementById('mainNav');
+  const adminNav = document.getElementById('adminNav');
+
+  userApp.style.display = 'none';
+  adminApp.style.display = 'contents';
+  if (mainNav) mainNav.style.display = 'none';
+  if (adminNav) adminNav.style.display = 'flex';
+
   renderAdminNav();
+  await loadAllRegistrations();
   await loadAllRegistrations();
   renderAdminDashboard();
   renderAdminRegistrations();
@@ -176,13 +208,16 @@ function renderCards() {
 // =================== DETAIL ===================
 function openDetail(id) {
   const a = ACTS.find(x => x.id === id) || myActivities.find(x => x.id === id);
+  const a = ACTS.find(x => x.id === id) || myActivities.find(x => x.id === id);
   if (!a) return;
   currentDetailId = id;
   
   document.getElementById('dTitle').textContent = a.title;
   document.getElementById('dHero').textContent = a.emoji || '📅';
+  document.getElementById('dHero').textContent = a.emoji || '📅';
   document.getElementById('dHero').style.background = HEROCOLOR[a.color] || '#4f46e5';
   
+  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? String(a.tags).split(',') : ['Uncategorized']);
   const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? String(a.tags).split(',') : ['Uncategorized']);
   document.getElementById('dTags').innerHTML = tagsArray.map(t => {
     const cleanTag = t.trim();
@@ -191,14 +226,23 @@ function openDetail(id) {
   
   document.getElementById('dDate').textContent = a.date || '';
   document.getElementById('dLocation').textContent = a.loc || 'Location not provided';
+  document.getElementById('dDate').textContent = a.date || '';
+  document.getElementById('dLocation').textContent = a.loc || 'Location not provided';
   document.getElementById('dDesc').textContent = a.desc || "No description available for this event.";
+  document.getElementById('dQuota').textContent = a.quota ?? '-';
+  document.getElementById('dMax').textContent = a.max ?? '-';
   document.getElementById('dQuota').textContent = a.quota ?? '-';
   document.getElementById('dMax').textContent = a.max ?? '-';
 
   const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
   const mealUpdateBtn = document.getElementById('mealUpdateBtn');
+  const mealUpdateBtn = document.getElementById('mealUpdateBtn');
   if (already) {
+    btn.textContent = '✕ Cancel Registration';
+    btn.className = 'register-btn cancel';
+    btn.disabled = false;
+    if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
     btn.textContent = '✕ Cancel Registration';
     btn.className = 'register-btn cancel';
     btn.disabled = false;
@@ -208,7 +252,15 @@ function openDetail(id) {
     btn.className = 'register-btn';
     btn.disabled = true;
     if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
+    btn.textContent = 'Fully Booked';
+    btn.className = 'register-btn';
+    btn.disabled = true;
+    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   } else {
+    btn.textContent = 'Register Now';
+    btn.className = 'register-btn';
+    btn.disabled = false;
+    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
     btn.textContent = 'Register Now';
     btn.className = 'register-btn';
     btn.disabled = false;
@@ -232,6 +284,7 @@ function handleRegister() {
     document.getElementById('authModal').classList.add('open');
   } else {
     mealModalMode = 'register';
+    mealModalMode = 'register';
     selectedMeal = null;
     document.getElementById('meatBtn').classList.remove('selected');
     document.getElementById('vegBtn').classList.remove('selected');
@@ -239,6 +292,21 @@ function handleRegister() {
     document.getElementById('submitMealBtn').style.pointerEvents = 'none';
     document.getElementById('mealModal').classList.add('open');
   }
+}
+
+function openMealUpdateModal(id) {
+  const registered = myActivities.find(m => m.id === id);
+  if (!registered) return;
+  currentDetailId = id;
+  mealModalMode = 'update';
+  selectedMeal = registered.meal || null;
+  document.getElementById('meatBtn').classList.toggle('selected', selectedMeal === 'meat');
+  document.getElementById('vegBtn').classList.toggle('selected', selectedMeal === 'veg');
+  const submitBtn = document.getElementById('submitMealBtn');
+  submitBtn.textContent = 'Save Meal Preference';
+  submitBtn.style.opacity = selectedMeal ? '1' : '0.5';
+  submitBtn.style.pointerEvents = selectedMeal ? 'auto' : 'none';
+  document.getElementById('mealModal').classList.add('open');
 }
 
 function openMealUpdateModal(id) {
@@ -294,7 +362,13 @@ async function submitReg() {
     return;
   }
 
+  if (mealModalMode === 'update') {
+    await updateMealPreference();
+    return;
+  }
+
   const a = ACTS.find(x => x.id === currentDetailId);
+  if (!a) return alert('Event not found');
   if (!a) return alert('Event not found');
 
   try {
@@ -316,6 +390,7 @@ async function submitReg() {
       
       document.getElementById('mealModal').classList.remove('open');
       document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
+      document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
       document.getElementById('successMsg').textContent = `You have successfully registered for "${a.title}". Meal preference: ${selectedMeal==='meat'?'Non-Vegetarian':'Vegetarian'}.`;
       document.getElementById('successModal').classList.add('open');
       
@@ -324,6 +399,10 @@ async function submitReg() {
       
       const btn = document.getElementById('regBtn');
       btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel';
+      const mealUpdateBtn = document.getElementById('mealUpdateBtn');
+      if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
+      const reloaded = ACTS.find(x => x.id === currentDetailId);
+      if (reloaded) document.getElementById('dQuota').textContent = reloaded.quota;
       const mealUpdateBtn = document.getElementById('mealUpdateBtn');
       if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
       const reloaded = ACTS.find(x => x.id === currentDetailId);
@@ -370,12 +449,53 @@ async function updateMealPreference() {
   }
 }
 
+async function updateMealPreference() {
+  const a = ACTS.find(x => x.id === currentDetailId) || myActivities.find(x => x.id === currentDetailId);
+  if (!a || !currentUser || !currentUser.id_db) return alert('Unable to update meal preference');
+
+  try {
+    const cancelRes = await fetch(`${API_BASE}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id_db, event_id: a.id })
+    });
+    const cancelData = await cancelRes.json().catch(() => ({}));
+    if (!cancelRes.ok) throw new Error(cancelData.error || 'Failed to update meal preference');
+
+    const regRes = await fetch(`${API_BASE}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id_db, event_id: a.id, dietary_req: selectedMeal })
+    });
+    const regData = await regRes.json().catch(() => ({}));
+    if (!regRes.ok) throw new Error(regData.error || 'Failed to save the new meal preference');
+
+    document.getElementById('mealModal').classList.remove('open');
+    document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
+    await loadMyActivities();
+    await loadEvents();
+    renderMine();
+    openDetail(a.id);
+    showAdminSuccess('Meal Preference Updated', `Your meal preference for "${a.title}" is now ${selectedMeal === 'meat' ? 'Non-Vegetarian' : 'Vegetarian'}.`);
+  } catch (e) {
+    console.error(e);
+    alert(e.message || 'Failed to update meal preference');
+  } finally {
+    mealModalMode = 'register';
+  }
+}
+
 function goToMine() {
   document.getElementById('successModal').classList.remove('open');
   closeDetailForce();
   switchTab(1);
 }
 
+function closeMeal() {
+  document.getElementById('mealModal').classList.remove('open');
+  document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
+  mealModalMode = 'register';
+}
 function closeMeal() {
   document.getElementById('mealModal').classList.remove('open');
   document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
@@ -541,6 +661,8 @@ async function doRegister() {
 
   if (!user_id) return alert('Please enter your Student ID / Account');
   if (!pw)      return alert('Please enter your password');
+  if (!user_id) return alert('Please enter your Student ID / Account');
+  if (!pw)      return alert('Please enter your password');
 
   try {
     const res = await fetch(`${API_BASE}/register_user`, {
@@ -561,6 +683,7 @@ async function doRegister() {
     
     const data = await res.json();
     if (!res.ok) {
+        alert(data.error || 'Registration failed');
         alert(data.error || 'Registration failed');
         return;
     }
@@ -606,6 +729,7 @@ function renderMine() {
   }
   el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => `
     <div class="my-act-card" onclick="openDetailFromMine(${m.id})">
+    <div class="my-act-card" onclick="openDetailFromMine(${m.id})">
       <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
       <div class="my-act-info">
         <h4>${m.title}</h4>
@@ -614,8 +738,30 @@ function renderMine() {
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
         <button class="cancel-small-btn" onclick="event.stopPropagation();cancelFromMine(${m.id})">Cancel</button>
+        <button class="cancel-small-btn" onclick="event.stopPropagation();cancelFromMine(${m.id})">Cancel</button>
       </div>
     </div>`).join('') + `</div>`;
+}
+
+function openDetailFromMine(id) {
+  const existsInEvents = ACTS.find(x => x.id === id);
+  if (!existsInEvents) {
+    const mine = myActivities.find(x => x.id === id);
+    if (!mine) return;
+    ACTS.push({
+      id: mine.id,
+      title: mine.title,
+      emoji: mine.emoji || '📅',
+      color: mine.color || 'blue',
+      date: mine.date || '',
+      loc: 'Location not provided',
+      tags: ['Registered'],
+      quota: '-',
+      max: '-',
+      desc: 'No description available for this event.'
+    });
+  }
+  openDetail(id);
 }
 
 function openDetailFromMine(id) {
@@ -721,6 +867,7 @@ async function toggleProfileEdit() {
             })
         });
         const result = await res.json();
+        if (!res.ok) alert('Save failed: ' + (result.error || 'Unknown error'));
         if (!res.ok) alert('Save failed: ' + (result.error || 'Unknown error'));
     } catch(e) {
         console.error("Update failed", e);
@@ -857,10 +1004,13 @@ function renderAdminNav() {
   badge.className = 'admin-badge-nav';
   // 💡 文字同步修改為 管理者模式
   badge.innerHTML = `<i class="ti ti-shield-check"></i> Administrator Mode`;
+  // 💡 文字同步修改為 管理者模式
+  badge.innerHTML = `<i class="ti ti-shield-check"></i> Administrator Mode`;
   nav.insertBefore(badge, nav.children[1]);
 
   const bottom = document.createElement('div');
   bottom.className = 'nav-bottom';
+  bottom.innerHTML = `<button class="nav-bottom-btn" onclick="adminLogout()"><i class="ti ti-logout"></i> Log out Admin</button>`;
   bottom.innerHTML = `<button class="nav-bottom-btn" onclick="adminLogout()"><i class="ti ti-logout"></i> Log out Admin</button>`;
   nav.appendChild(bottom);
 
@@ -962,8 +1112,88 @@ function renderAdminDashboard() {
       </div>`;
     }).join('');
   }
+  const combinedZone = document.getElementById('admin-combined-card-zone');
+  const activityList = document.getElementById('admin-activity-list');
+  if (!combinedZone) return;
+
+  const totalEvents = ACTS.length;
+
+  // Overview top area: two separate small cards in the same row
+  combinedZone.innerHTML = `
+    <div class="admin-overview-card-row">
+      <div class="admin-overview-mini-card">
+        <div class="admin-overview-icon total">
+          <i class="ti ti-calendar-event"></i>
+        </div>
+        <div>
+          <div class="admin-overview-label">Total Events</div>
+          <div class="admin-overview-number">${totalEvents}</div>
+        </div>
+      </div>
+
+      <button type="button" class="admin-overview-mini-card add" onclick="openAddActivity()">
+        <div class="admin-overview-icon add">
+          <i class="ti ti-plus"></i>
+        </div>
+        <div>
+          <div class="admin-overview-label">Quick Action</div>
+          <div class="admin-overview-title">Add Event</div>
+        </div>
+      </button>
+    </div>
+  `;
+
+  // 下方活動列表直接渲染（不需要按鈕觸發）
+  if (activityList) {
+    activityList.classList.remove('admin-shortcut-grid');
+    
+    if (ACTS.length === 0) {
+      activityList.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No events available. Click Add Event to create one.</div>`;
+      return;
+    }
+
+    activityList.innerHTML = ACTS.map(a => {
+      const regs = REGISTRATIONS[a.id] || [];
+      const meat = regs.filter(r => r.meal === 'meat').length;
+      const veg = regs.filter(r => r.meal === 'veg').length;
+      const pct = Math.round(Number(a.quota || 0) / Number(a.max || 1) * 100);
+      
+      return `
+      <div class="admin-act-card">
+        <div class="admin-act-header">
+          <div class="act-thumb ${a.color}" style="width:48px;height:48px;font-size:22px">${a.emoji || '📅'}</div>
+          <div class="admin-act-info">
+            <h3>${a.title}</h3>
+            <p>${a.date} · ${a.loc}</p>
+          </div>
+          <div class="admin-act-actions">
+            <button class="admin-btn view" onclick="openRegDetail(${a.id})">
+              <i class="ti ti-users"></i>List
+            </button>
+            <button class="admin-btn edit" onclick="openEditActivity(${a.id})">
+              <i class="ti ti-edit"></i>Edit
+            </button>
+            <button class="admin-btn del" onclick="openDeleteModal(${a.id})">
+              <i class="ti ti-trash"></i>Delete
+            </button>
+          </div>
+        </div>
+        <div class="admin-act-footer">
+          <div class="admin-progress-wrap">
+            <div class="admin-quota-label">Registration Progress: ${a.quota} / ${a.max}</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="admin-meal-pills">
+            <span class="meal-pill meat">🍖 Meat: ${meat}</span>
+            <span class="meal-pill veg">🌿 Veg: ${veg}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 }
 
+// =================== ADMIN: REGISTRATION DETAIL
 // =================== ADMIN: REGISTRATION DETAIL
 function openRegDetail(actId) {
   const a    = ACTS.find(x => x.id === actId);
@@ -1009,6 +1239,7 @@ function openRegDetail(actId) {
           <td style="font-weight:600">${r.name}</td>
           <td>${r.dept}</td>
           <td>
+            <span class="meal-pill ${r.meal}">${r.meal==='meat'?'🍖 ':'🌿'}</span>
             <span class="meal-pill ${r.meal}">${r.meal==='meat'?'🍖 ':'🌿'}</span>
           </td>
         </tr>`).join('')}
@@ -1094,11 +1325,16 @@ function openAddActivity() {
   document.getElementById('af_title').value  = '';
   document.getElementById('af_date').value   = '';
   document.getElementById('af_time').value   = '';
+  document.getElementById('af_time').value   = '';
   document.getElementById('af_loc').value    = '';
+  const deptSelect = document.getElementById('af_dept');
+  if (deptSelect) deptSelect.value = 'College of Management';
   const deptSelect = document.getElementById('af_dept');
   if (deptSelect) deptSelect.value = 'College of Management';
   document.getElementById('af_quota').value  = '0';
   document.getElementById('af_max').value    = '100';
+  document.getElementById('af_emoji').value  = '💻';
+  document.getElementById('af_color').value  = 'blue';
   document.getElementById('af_emoji').value  = '💻';
   document.getElementById('af_color').value  = 'blue';
   document.getElementById('af_tags').value   = '';
@@ -1128,6 +1364,9 @@ async function saveActivity() {
         category_id: 1,       // 預設分類分類ID
         description: "",      // 預設詳細描述
         emoji: "📅",           // 預設卡片圖示
+        color: "blue",        // 預設卡片顏色
+        host_id: currentUser.id_db,
+    department: dept
         color: "blue",        // 預設卡片顏色
         host_id: currentUser.id_db,
     department: dept
@@ -1181,7 +1420,12 @@ function openEditActivity(id) {
   const editDateTime = splitActivityDateTime(a.date);
   document.getElementById('af_date').value   = editDateTime.date;
   document.getElementById('af_time').value   = editDateTime.time;
+  const editDateTime = splitActivityDateTime(a.date);
+  document.getElementById('af_date').value   = editDateTime.date;
+  document.getElementById('af_time').value   = editDateTime.time;
   document.getElementById('af_loc').value    = a.loc;
+  const deptSelect = document.getElementById('af_dept');
+  if (deptSelect) deptSelect.value = a.department || 'College of Management';
   const deptSelect = document.getElementById('af_dept');
   if (deptSelect) deptSelect.value = a.department || 'College of Management';
   document.getElementById('af_quota').value  = a.quota;
@@ -1219,20 +1463,50 @@ function formatDateTimeLocal(value) {
   return normalized.slice(0, 16);
 }
 
+
+function parseActivityDateTime(dateValue, timeValue) {
+  const normalizedDate = (dateValue || '').replace(/\//g, '-');
+  const normalizedTime = timeValue || '00:00';
+  return {
+    event_day: normalizedDate,
+    event_time: normalizedTime
+  };
+}
+
+function splitActivityDateTime(value) {
+  if (!value) return { date: '', time: '' };
+  const normalized = String(value).replace(/\//g, '-').replace('T', ' ');
+  const parts = normalized.split(' ');
+  return {
+    date: parts[0] || '',
+    time: (parts[1] || '').slice(0, 5)
+  };
+}
+
+function formatDateTimeLocal(value) {
+  if (!value) return '';
+  const normalized = String(value).replace(/\//g, '-').replace(' ', 'T');
+  return normalized.slice(0, 16);
+}
+
 // 修改「新增／編輯活動」的表單送出
 async function submitActivityForm() {
   const title = document.getElementById('af_title').value.trim();
   const date   = document.getElementById('af_date').value.trim();
   const time   = document.getElementById('af_time').value.trim();
+  const time   = document.getElementById('af_time').value.trim();
   const loc    = document.getElementById('af_loc').value.trim();
   const max   = parseInt(document.getElementById('af_max').value)   || 100;
+  const dept  = document.getElementById('af_dept') ? document.getElementById('af_dept').value : 'College of Management';
   const dept  = document.getElementById('af_dept') ? document.getElementById('af_dept').value : 'College of Management';
   const emoji = document.getElementById('af_emoji').value;
   const color = document.getElementById('af_color').value;
   const desc  = document.getElementById('af_desc').value.trim();
 
   if (!title || !date || !time || !loc) return alert('Please fill in the event name, date, time, and location');
+  if (!title || !date || !time || !loc) return alert('Please fill in the event name, date, time, and location');
 
+  const { event_day, event_time } = parseActivityDateTime(date, time);
   const { event_day, event_time } = parseActivityDateTime(date, time);
 
   // 整理要傳送給後端的資料包
@@ -1246,6 +1520,9 @@ async function submitActivityForm() {
     emoji: emoji,        
     color: color,        
     description: desc,
+    category_id: 1 ,// 預設分類 ID，可根據需求調整
+    host_id: currentUser.id_db,
+    department: dept
     category_id: 1 ,// 預設分類 ID，可根據需求調整
     host_id: currentUser.id_db,
     department: dept
@@ -1588,126 +1865,130 @@ async function loadEvents() {
     const data = await res.json();
     
     // Convert API data to matching ACTS structure
-    ACTS = data.map(d => ({
-      id: Number(d.id),
-      emoji: '📅', // default emoji since backend doesn't have it
-      color: 'blue', // default color
-      title: d.title,
-      date: `${d.date} ${d.time}`,
-      loc: d.loc,
-      tags: d.tags ? [d.tags] : [],
-      quota: d.quota || 0,
-      max: d.student_capacity,
-      desc: d.description || '',
-      department: d.department || d.dept || 'College of Management'
-    }));
+    ACTS = data.map(d => {
+      // 🌟【致命修正 1】Banner 與日曆通常需要獨立的 date 欄位 (YYYY/MM/DD)
+      // 如果直接把 time 塞進 date，會導致 Banner 解析日期失敗而整塊消失！
+      const rawDate = d.date ? String(d.date).replace(/-/g, '/') : '';
+      
+      // 確保 tags 一定是陣列
+      let formattedTags = [];
+      if (d.tags) {
+        formattedTags = Array.isArray(d.tags) ? d.tags : [String(d.tags).trim()];
+      }
+
+      return {
+        id: Number(d.id),
+        emoji: d.emoji || '📅', // 優先使用後端傳來的 emoji，沒有才用預設
+        color: d.color || 'blue', // 優先使用後端傳來的顏色
+        title: d.title,
+        date: rawDate,          // 保持純日期格式，保住 Banner 運作
+        time: d.time || '00:00', // 獨立分開時間欄位
+        loc: d.loc,
+        tags: formattedTags,    // 確保為陣列
+        quota: d.quota || 0,
+        max: d.student_capacity || d.max || 100,
+        desc: d.description || d.desc || '',
+        department: d.department || d.dept || 'College of Management'
+      };
+    });
   
     window.allEvents = [...ACTS];
-    renderCards();
-    renderBanner();
+    
+    // 依序安全渲染
+    if (typeof renderCards === 'function') renderCards();
+    if (typeof renderBanner === 'function') renderBanner();
 
-    if (currentRole === 'admin') {
+    if (currentRole === 'admin' && typeof renderAdminDashboard === 'function') {
       renderAdminDashboard();
     }
   } catch (error) {
     console.error('Failed to load events from DB:', error);
   }
 }
+
 // === 雙重監聽：無論是輸入文字還是切換下拉選單，都觸發 doFilter ===
-document.getElementById('searchKeyword').addEventListener('input', doFilter);
-
-if (document.getElementById('filterTag')) {
-    document.getElementById('filterTag').addEventListener('change', doFilter);
+const searchKeywordEl = document.getElementById('searchKeyword');
+if (searchKeywordEl) {
+    searchKeywordEl.addEventListener('input', doFilter);
 }
 
-// === 核心複合篩選 Function ===
-function doFilter() {
-    // 1. 取得並處理關鍵字
-    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
-    
-    // 2. 取得並處理下拉選單分類
-    const filterTagEl = document.getElementById('filterTag');
-    const selectedTag = filterTagEl ? filterTagEl.value : 'all';
-
-    // 3. 如果兩個欄位都是空的/預設狀態，直接還原全部活動
-    if (!keyword && selectedTag === 'all') {
-        ACTS = [...window.allEvents];
-    } else {
-        // 4. 開始複合過濾
-        ACTS = window.allEvents.filter(act => {
-            // 條件 A：關鍵字比對 (名稱、地點、描述、標籤)
-            const matchText = !keyword || (
-                (act.title && act.title.toLowerCase().includes(keyword)) || 
-                (act.loc && act.loc.toLowerCase().includes(keyword)) ||
-                (act.desc && act.desc.toLowerCase().includes(keyword)) ||
-                (act.tags && act.tags.toLowerCase().includes(keyword))
-            );
-            
-            // 條件 B：下拉選單標籤比對
-            const matchTag = selectedTag === 'all' || (act.tags && act.tags.includes(selectedTag));
-
-            // 同時滿足才留下來
-            return matchText && matchTag;
-        });
-    }
-
-    // 5. 關鍵：重新呼叫你原本渲染卡片的 function，讓畫面更新
-    renderCards();
+const filterTagEl = document.getElementById('filterTag');
+if (filterTagEl) {
+    filterTagEl.addEventListener('change', doFilter);
 }
-// =================== INIT ===================
-loadEvents();
-showUserInterface(); // default to user interface
 
-// 頁面載入後自動開啟登入彈窗
-// === 調整後的事件綁定：確保網頁加載完後執行 ===
-document.addEventListener('DOMContentLoaded', () => {
-    const searchBtn = document.getElementById('searchBtn');
-    const searchInput = document.getElementById('searchKeyword');
-    const filterSelect = document.getElementById('filterTag');
-
-    // 💡 1. 點擊「搜尋按鈕」時才觸發搜尋
-    if (searchBtn) {
-        searchBtn.addEventListener('click', doFilter);
-    }
-
-    // 💡 2. 在輸入框按下「Enter 鍵」時也觸發搜尋
-    if (searchInput) {
-        searchInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault(); // 防止表單預設重整行為
-                doFilter();
-            }
-        });
-    }
-
-    // 💡 3. 下拉選單保持不變（切換分類時直接連動）
-    if (filterSelect) {
-        filterSelect.addEventListener('change', doFilter);
-    }
-});
-
-// === 核心複合篩選 Function (維持精準欄位對齊) ===
+// === 核心複合篩選 Function (完美整合與去重版) ===
 function doFilter() {
     if (!window.allEvents) return;
 
-    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
-    const selectedTag = document.getElementById('filterTag').value;
+    const searchInput = document.getElementById('searchKeyword');
+    const filterSelect = document.getElementById('filterTag');
+
+    const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const selectedTag = filterSelect ? filterSelect.value : 'all';
 
     // 開始過濾
     ACTS = window.allEvents.filter(act => {
-        // 關鍵字比對
+        
+        // 🟢 1. 安全處理標籤字串化（防止陣列調用 .toLowerCase() 崩潰）
+        let tagString = '';
+        if (Array.isArray(act.tags)) {
+            tagString = act.tags.join(' ').toLowerCase(); 
+        } else if (typeof act.tags === 'string') {
+            tagString = act.tags.toLowerCase();
+        }
+
+        // 🟢 2. 關鍵字複合比對 (名稱、地點、描述、標籤)
         const matchText = !keyword || (
             (act.title && act.title.toLowerCase().includes(keyword)) || 
-            (act.loc && act.loc.toLowerCase().includes(keyword)) ||
-            (act.desc && act.desc.toLowerCase().includes(keyword))
+            (act.loc   && act.loc.toLowerCase().includes(keyword))   ||
+            (act.desc  && act.desc.toLowerCase().includes(keyword))  ||
+            tagString.includes(keyword)
         );
         
-        // 標籤比對
-        const matchTag = selectedTag === 'all' || act.tags === selectedTag;
+        // 🟢 3. 下拉選單標籤比對 (完美相容陣列與字串比對)
+        let matchTag = false;
+        if (selectedTag === 'all') {
+            matchTag = true;
+        } else {
+            if (Array.isArray(act.tags)) {
+                matchTag = act.tags.some(t => {
+                    const cleanT = String(t).trim();
+                    return cleanT === selectedTag || cleanT.includes(selectedTag) || selectedTag.includes(cleanT);
+                });
+            } else if (typeof act.tags === 'string') {
+                matchTag = act.tags === selectedTag || act.tags.includes(selectedTag);
+            }
+        }
 
         return matchText && matchTag;
     });
 
     // 重新繪製畫面卡片
-    renderCards(); 
+    if (typeof renderCards === 'function') renderCards(); 
 }
+
+// =================== INIT ===================
+loadEvents();
+if (typeof showUserInterface === 'function') showUserInterface();
+
+// === 事件綁定：處理按鈕與 Enter 鍵觸發 ===
+document.addEventListener('DOMContentLoaded', () => {
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchKeyword');
+
+    // 💡 1. 點擊「搜尋按鈕」時觸發
+    if (searchBtn) {
+        searchBtn.addEventListener('click', doFilter);
+    }
+
+    // 💡 2. 在輸入框按下「Enter 鍵」時也觸發
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                doFilter();
+            }
+        });
+    }
+});
