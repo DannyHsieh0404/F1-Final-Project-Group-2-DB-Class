@@ -33,6 +33,7 @@ let currentRole = null; // 'user' | 'admin'
 let myActivities = [];
 let currentDetailId = null;
 let selectedMeal = null;
+let mealModalMode = 'register'; // 'register' | 'update'
 let pendingAfterAuth = false;
 let cancelTargetId = null;
 let profileEditing = false;
@@ -47,18 +48,24 @@ let deleteTargetId = null;
 function isDesktop() { return window.innerWidth >= 900; }
 
 function applyLayout() {
-  const logo    = document.getElementById('navLogo');
+  const logo = document.getElementById('navLogo');
   const adminLogo = document.getElementById('adminNavLogo');
+  const app = document.getElementById('app');
+  const mainNav = document.getElementById('mainNav');
+  const adminNav = document.getElementById('adminNav');
 
   if (isDesktop()) {
     if (logo) logo.style.display = 'block';
     if (adminLogo) adminLogo.style.display = 'block';
-    document.getElementById('app').style.gridTemplateColumns = 'var(--sidebar-w) 1fr';
-    document.getElementById('mainNav').style.order = '-1';
-    document.getElementById('adminNav').style.order = '-1';
+    if (app) app.style.gridTemplateColumns = 'var(--sidebar-w) 1fr';
+    if (mainNav) mainNav.style.order = '-1';
+    if (adminNav) adminNav.style.order = '-1';
   } else {
     if (logo) logo.style.display = 'none';
     if (adminLogo) adminLogo.style.display = 'none';
+    if (app) app.style.gridTemplateColumns = '';
+    if (mainNav) mainNav.style.order = '';
+    if (adminNav) adminNav.style.order = '';
   }
 }
 
@@ -67,15 +74,31 @@ applyLayout();
 
 // =================== INTERFACE SWITCH ===================
 function showUserInterface() {
-  document.getElementById('userApp').style.display = 'contents';
-  document.getElementById('adminApp').style.display = 'none';
+  const userApp = document.getElementById('userApp');
+  const adminApp = document.getElementById('adminApp');
+  const mainNav = document.getElementById('mainNav');
+  const adminNav = document.getElementById('adminNav');
+
+  userApp.style.display = 'contents';
+  adminApp.style.display = 'none';
+  if (mainNav) mainNav.style.display = isDesktop() ? 'flex' : 'flex';
+  if (adminNav) adminNav.style.display = 'none';
+  applyLayout();
 }
 
 async function showAdminInterface() {
-  document.getElementById('userApp').style.display = 'none';
-  document.getElementById('adminApp').style.display = 'contents';
+  const userApp = document.getElementById('userApp');
+  const adminApp = document.getElementById('adminApp');
+  const mainNav = document.getElementById('mainNav');
+  const adminNav = document.getElementById('adminNav');
+
+  userApp.style.display = 'none';
+  adminApp.style.display = 'contents';
+  if (mainNav) mainNav.style.display = 'none';
+  if (adminNav) adminNav.style.display = 'flex';
+
   renderAdminNav();
-  await loadAllRegistrations(); // ← 加這行，進後台就先把報名資料撈進來
+  await loadAllRegistrations();
   renderAdminDashboard();
   renderAdminRegistrations();
   renderAdminProfile();
@@ -139,38 +162,44 @@ function renderCards() {
 
 // =================== DETAIL ===================
 function openDetail(id) {
-  const a = ACTS.find(x => x.id === id);
+  const a = ACTS.find(x => x.id === id) || myActivities.find(x => x.id === id);
   if (!a) return;
   currentDetailId = id;
   
   document.getElementById('dTitle').textContent = a.title;
-  document.getElementById('dHero').textContent = a.emoji;
+  document.getElementById('dHero').textContent = a.emoji || '📅';
   document.getElementById('dHero').style.background = HEROCOLOR[a.color] || '#4f46e5';
   
-  // === 💡 核心修正：相容字串格式的標籤處理 ===
-  // 如果 a.tags 已經是字串，直接切開變成陣列，或者直接包成陣列來做 map
-  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? a.tags.split(',') : ['Uncategorized']);
+  const tagsArray = Array.isArray(a.tags) ? a.tags : (a.tags ? String(a.tags).split(',') : ['Uncategorized']);
   document.getElementById('dTags').innerHTML = tagsArray.map(t => {
     const cleanTag = t.trim();
     return `<span class="tag ${TAGCOLOR[cleanTag] || 'green'}">${cleanTag}</span>`;
   }).join('');
   
-  document.getElementById('dDate').textContent = a.date;
-  document.getElementById('dLocation').textContent = a.loc;
-  
-  // 🎯 這裡就能順利渲染活動描述，不會中途死機了！
+  document.getElementById('dDate').textContent = a.date || '';
+  document.getElementById('dLocation').textContent = a.loc || 'Location not provided';
   document.getElementById('dDesc').textContent = a.desc || "No description available for this event.";
-  document.getElementById('dQuota').textContent = a.quota;
-  document.getElementById('dMax').textContent = a.max;
+  document.getElementById('dQuota').textContent = a.quota ?? '-';
+  document.getElementById('dMax').textContent = a.max ?? '-';
 
   const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
+  const mealUpdateBtn = document.getElementById('mealUpdateBtn');
   if (already) {
-    btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel'; btn.disabled = false;
+    btn.textContent = '✕ Cancel Registration';
+    btn.className = 'register-btn cancel';
+    btn.disabled = false;
+    if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
   } else if (a.quota >= a.max) {
-    btn.textContent = 'Fully Booked'; btn.className = 'register-btn'; btn.disabled = true;
+    btn.textContent = 'Fully Booked';
+    btn.className = 'register-btn';
+    btn.disabled = true;
+    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   } else {
-    btn.textContent = 'Register Now'; btn.className = 'register-btn'; btn.disabled = false;
+    btn.textContent = 'Register Now';
+    btn.className = 'register-btn';
+    btn.disabled = false;
+    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   }
   document.getElementById('detailOverlay').classList.add('open');
 }
@@ -189,6 +218,7 @@ function handleRegister() {
     pendingAfterAuth = true;
     document.getElementById('authModal').classList.add('open');
   } else {
+    mealModalMode = 'register';
     selectedMeal = null;
     document.getElementById('meatBtn').classList.remove('selected');
     document.getElementById('vegBtn').classList.remove('selected');
@@ -196,6 +226,21 @@ function handleRegister() {
     document.getElementById('submitMealBtn').style.pointerEvents = 'none';
     document.getElementById('mealModal').classList.add('open');
   }
+}
+
+function openMealUpdateModal(id) {
+  const registered = myActivities.find(m => m.id === id);
+  if (!registered) return;
+  currentDetailId = id;
+  mealModalMode = 'update';
+  selectedMeal = registered.meal || null;
+  document.getElementById('meatBtn').classList.toggle('selected', selectedMeal === 'meat');
+  document.getElementById('vegBtn').classList.toggle('selected', selectedMeal === 'veg');
+  const submitBtn = document.getElementById('submitMealBtn');
+  submitBtn.textContent = 'Save Meal Preference';
+  submitBtn.style.opacity = selectedMeal ? '1' : '0.5';
+  submitBtn.style.pointerEvents = selectedMeal ? 'auto' : 'none';
+  document.getElementById('mealModal').classList.add('open');
 }
 
 function selectMeal(type) {
@@ -231,7 +276,13 @@ async function loadMyActivities() {
 }
 
 async function submitReg() {
+  if (mealModalMode === 'update') {
+    await updateMealPreference();
+    return;
+  }
+
   const a = ACTS.find(x => x.id === currentDetailId);
+  if (!a) return alert('Event not found');
 
   try {
       const res = await fetch(`${API_BASE}/register`, {
@@ -250,20 +301,58 @@ async function submitReg() {
       }
       
       document.getElementById('mealModal').classList.remove('open');
+      document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
       document.getElementById('successMsg').textContent = `You have successfully registered for "${a.title}". Meal preference: ${selectedMeal==='meat'?'Non-Vegetarian':'Vegetarian'}.`;
       document.getElementById('successModal').classList.add('open');
       
       await loadMyActivities();
       await loadEvents();
       
-      
-      // Update UI button on detail page explicitly
       const btn = document.getElementById('regBtn');
       btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel';
-      document.getElementById('dQuota').textContent = ACTS.find(x => x.id === currentDetailId).quota;
+      const mealUpdateBtn = document.getElementById('mealUpdateBtn');
+      if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
+      const reloaded = ACTS.find(x => x.id === currentDetailId);
+      if (reloaded) document.getElementById('dQuota').textContent = reloaded.quota;
   } catch (e) {
       console.error(e);
       alert('An error occurred');
+  }
+}
+
+async function updateMealPreference() {
+  const a = ACTS.find(x => x.id === currentDetailId) || myActivities.find(x => x.id === currentDetailId);
+  if (!a || !currentUser || !currentUser.id_db) return alert('Unable to update meal preference');
+
+  try {
+    const cancelRes = await fetch(`${API_BASE}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id_db, event_id: a.id })
+    });
+    const cancelData = await cancelRes.json().catch(() => ({}));
+    if (!cancelRes.ok) throw new Error(cancelData.error || 'Failed to update meal preference');
+
+    const regRes = await fetch(`${API_BASE}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id_db, event_id: a.id, dietary_req: selectedMeal })
+    });
+    const regData = await regRes.json().catch(() => ({}));
+    if (!regRes.ok) throw new Error(regData.error || 'Failed to save the new meal preference');
+
+    document.getElementById('mealModal').classList.remove('open');
+    document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
+    await loadMyActivities();
+    await loadEvents();
+    renderMine();
+    openDetail(a.id);
+    showAdminSuccess('Meal Preference Updated', `Your meal preference for "${a.title}" is now ${selectedMeal === 'meat' ? 'Non-Vegetarian' : 'Vegetarian'}.`);
+  } catch (e) {
+    console.error(e);
+    alert(e.message || 'Failed to update meal preference');
+  } finally {
+    mealModalMode = 'register';
   }
 }
 
@@ -273,7 +362,11 @@ function goToMine() {
   switchTab(1);
 }
 
-function closeMeal() { document.getElementById('mealModal').classList.remove('open'); }
+function closeMeal() {
+  document.getElementById('mealModal').classList.remove('open');
+  document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
+  mealModalMode = 'register';
+}
 
 // =================== CANCEL ===================
 function openCancelModal(id) {
@@ -411,8 +504,8 @@ async function doRegister() {
   const dept  = document.getElementById('rDept').value.trim();
   const pw = document.getElementById('rPw').value.trim();
 
-  if (!user_id) return alert('請填寫學號');
-  if (!pw)      return alert('請填寫密碼');
+  if (!user_id) return alert('Please enter your Student ID / Account');
+  if (!pw)      return alert('Please enter your password');
 
   try {
     const res = await fetch(`${API_BASE}/register_user`, {
@@ -429,7 +522,7 @@ async function doRegister() {
     
     const data = await res.json();
     if (!res.ok) {
-        alert(data.error || '註冊失敗');
+        alert(data.error || 'Registration failed');
         return;
     }
 
@@ -467,7 +560,7 @@ function renderMine() {
     return;
   }
   el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => `
-    <div class="my-act-card">
+    <div class="my-act-card" onclick="openDetailFromMine(${m.id})">
       <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
       <div class="my-act-info">
         <h4>${m.title}</h4>
@@ -475,9 +568,30 @@ function renderMine() {
       </div>
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
-        <button class="cancel-small-btn" onclick="cancelFromMine(${m.id})">Cancel</button>
+        <button class="cancel-small-btn" onclick="event.stopPropagation();cancelFromMine(${m.id})">Cancel</button>
       </div>
     </div>`).join('') + `</div>`;
+}
+
+function openDetailFromMine(id) {
+  const existsInEvents = ACTS.find(x => x.id === id);
+  if (!existsInEvents) {
+    const mine = myActivities.find(x => x.id === id);
+    if (!mine) return;
+    ACTS.push({
+      id: mine.id,
+      title: mine.title,
+      emoji: mine.emoji || '📅',
+      color: mine.color || 'blue',
+      date: mine.date || '',
+      loc: 'Location not provided',
+      tags: ['Registered'],
+      quota: '-',
+      max: '-',
+      desc: 'No description available for this event.'
+    });
+  }
+  openDetail(id);
 }
 
 // =================== PROFILE (USER) ===================
@@ -545,7 +659,7 @@ async function toggleProfileEdit() {
             })
         });
         const result = await res.json();
-        if (!res.ok) alert('儲存失敗：' + (result.error || '未知錯誤'));
+        if (!res.ok) alert('Save failed: ' + (result.error || 'Unknown error'));
     } catch(e) {
         console.error("Update failed", e);
         alert('Network error. Failed to save.');
@@ -662,9 +776,7 @@ function renderAdminNav() {
   const adminLogo = document.getElementById('adminNavLogo');
   if (adminLogo && isDesktop()) adminLogo.style.display = 'block';
 
-  // Inject badge and logout in sidebar bottom (desktop only)
   const nav = document.getElementById('adminNav');
-  // Remove any existing badge/bottom injected
   const existing = nav.querySelector('.admin-badge-nav');
   if (existing) existing.remove();
   const existingBottom = nav.querySelector('.nav-bottom');
@@ -672,15 +784,15 @@ function renderAdminNav() {
 
   const badge = document.createElement('div');
   badge.className = 'admin-badge-nav';
-  badge.innerHTML = `<i class="ti ti-shield-check"></i> Admin Mode`;
+  // 💡 文字同步修改為 管理者模式
+  badge.innerHTML = `<i class="ti ti-shield-check"></i> Administrator Mode`;
   nav.insertBefore(badge, nav.children[1]);
 
   const bottom = document.createElement('div');
   bottom.className = 'nav-bottom';
-  bottom.innerHTML = `<button class="nav-bottom-btn" onclick="adminLogout()"><i class="ti ti-logout"></i> Logout Admin</button>`;
+  bottom.innerHTML = `<button class="nav-bottom-btn" onclick="adminLogout()"><i class="ti ti-logout"></i> Log out Admin</button>`;
   nav.appendChild(bottom);
 
-  // update header badge
   const hb = document.getElementById('adminHeaderBadge');
   if (hb && currentUser) hb.textContent = `👤 ${currentUser.name}`;
 }
@@ -700,80 +812,88 @@ function adminLogout() {
 
 // =================== ADMIN: DASHBOARD ===================
 function renderAdminDashboard() {
-  renderAdminStats();
-  renderAdminActivityList();
-}
+  const combinedZone = document.getElementById('admin-combined-card-zone');
+  const activityList = document.getElementById('admin-activity-list');
+  if (!combinedZone) return;
 
-function renderAdminStats() {
-  const totalActs = ACTS.length;
-  const totalReg  = ACTS.reduce((s, a) => s + a.quota, 0);
-  const totalMeat = Object.values(REGISTRATIONS).flat().filter(r => r.meal === 'meat').length;
-  const totalVeg  = Object.values(REGISTRATIONS).flat().filter(r => r.meal === 'veg').length;
+  const totalEvents = ACTS.length;
 
-  document.getElementById('admin-stats-row').innerHTML = `
-    <div class="admin-stat-card">
-      <div class="admin-stat-num">${totalActs}</div>
-      <div class="admin-stat-label">Total Events</div>
-    </div>
-    <div class="admin-stat-card">
-      <div class="admin-stat-num">${totalReg}</div>
-      <div class="admin-stat-label">Total Attendees</div>
-    </div>
-    <div class="admin-stat-card">
-      <div class="admin-stat-num">${totalMeat}</div>
-      <div class="admin-stat-label">Meat Orders</div>
-      <div class="admin-stat-sub">🍖 Meat</div>
-    </div>
-    <div class="admin-stat-card">
-      <div class="admin-stat-num">${totalVeg}</div>
-      <div class="admin-stat-label">Veg Orders</div>
-      <div class="admin-stat-sub">🌿 Veg</div>
-    </div>`;
-}
-
-function renderAdminActivityList() {
-  const list = document.getElementById('admin-activity-list');
-  if (!list) return;
-  list.innerHTML = ACTS.map(a => {
-    const regs   = REGISTRATIONS[a.id] || [];
-    const meat   = regs.filter(r => r.meal === 'meat').length;
-    const veg    = regs.filter(r => r.meal === 'veg').length;
-    const pct    = Math.round(a.quota / a.max * 100);
-    return `
-    <div class="admin-act-card">
-      <div class="admin-act-header">
-        <div class="act-thumb ${a.color}" style="width:48px;height:48px;font-size:22px">${a.emoji}</div>
-        <div class="admin-act-info">
-          <h3>${a.title}</h3>
-          <p>${a.date} · ${a.loc}</p>
+  // Overview top area: two separate small cards in the same row
+  combinedZone.innerHTML = `
+    <div class="admin-overview-card-row">
+      <div class="admin-overview-mini-card">
+        <div class="admin-overview-icon total">
+          <i class="ti ti-calendar-event"></i>
         </div>
-        <div class="admin-act-actions">
-          <button class="admin-btn view" onclick="openRegDetail(${a.id})">
-            <i class="ti ti-users"></i>List
-          </button>
-          <button class="admin-btn edit" onclick="openEditActivity(${a.id})">
-            <i class="ti ti-edit"></i>Edit
-          </button>
-          <button class="admin-btn del" onclick="openDeleteModal(${a.id})">
-            <i class="ti ti-trash"></i>Delete
-          </button>
+        <div>
+          <div class="admin-overview-label">Total Events</div>
+          <div class="admin-overview-number">${totalEvents}</div>
         </div>
       </div>
-      <div class="admin-act-footer">
-        <div class="admin-progress-wrap">
-          <div class="admin-quota-label">${a.quota} / ${a.max} Attending (${pct}%)</div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+
+      <button type="button" class="admin-overview-mini-card add" onclick="openAddActivity()">
+        <div class="admin-overview-icon add">
+          <i class="ti ti-plus"></i>
         </div>
-        <div class="admin-meal-pills">
-          <span class="meal-pill meat">🍖 ${meat}</span>
-          <span class="meal-pill veg">🌿 ${veg}</span>
+        <div>
+          <div class="admin-overview-label">Quick Action</div>
+          <div class="admin-overview-title">Add Event</div>
         </div>
-      </div>
-    </div>`;
-  }).join('');
+      </button>
+    </div>
+  `;
+
+  // 下方活動列表直接渲染（不需要按鈕觸發）
+  if (activityList) {
+    activityList.classList.remove('admin-shortcut-grid');
+    
+    if (ACTS.length === 0) {
+      activityList.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);">No events available. Click Add Event to create one.</div>`;
+      return;
+    }
+
+    activityList.innerHTML = ACTS.map(a => {
+      const regs = REGISTRATIONS[a.id] || [];
+      const meat = regs.filter(r => r.meal === 'meat').length;
+      const veg = regs.filter(r => r.meal === 'veg').length;
+      const pct = Math.round(Number(a.quota || 0) / Number(a.max || 1) * 100);
+      
+      return `
+      <div class="admin-act-card">
+        <div class="admin-act-header">
+          <div class="act-thumb ${a.color}" style="width:48px;height:48px;font-size:22px">${a.emoji || '📅'}</div>
+          <div class="admin-act-info">
+            <h3>${a.title}</h3>
+            <p>${a.date} · ${a.loc}</p>
+          </div>
+          <div class="admin-act-actions">
+            <button class="admin-btn view" onclick="openRegDetail(${a.id})">
+              <i class="ti ti-users"></i>List
+            </button>
+            <button class="admin-btn edit" onclick="openEditActivity(${a.id})">
+              <i class="ti ti-edit"></i>Edit
+            </button>
+            <button class="admin-btn del" onclick="openDeleteModal(${a.id})">
+              <i class="ti ti-trash"></i>Delete
+            </button>
+          </div>
+        </div>
+        <div class="admin-act-footer">
+          <div class="admin-progress-wrap">
+            <div class="admin-quota-label">Registration Progress: ${a.quota} / ${a.max}</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+          <div class="admin-meal-pills">
+            <span class="meal-pill meat">🍖 Meat: ${meat}</span>
+            <span class="meal-pill veg">🌿 Veg: ${veg}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 }
 
-// =================== ADMIN: REGISTRATION DETAIL ===================
+// =================== ADMIN: REGISTRATION DETAIL
 function openRegDetail(actId) {
   const a    = ACTS.find(x => x.id === actId);
   const regs = REGISTRATIONS[actId] || [];
@@ -810,7 +930,7 @@ function openRegDetail(actId) {
           <td style="font-weight:600">${r.name}</td>
           <td>${r.dept}</td>
           <td>
-            <span class="meal-pill ${r.meal}">${r.meal==='meat'?'🍖 Meat':'🌿 Veg'}</span>
+            <span class="meal-pill ${r.meal}">${r.meal==='meat'?'🍖 ':'🌿'}</span>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -891,11 +1011,14 @@ function openAddActivity() {
   document.getElementById('actFormSubtitle').textContent = 'Fill in event details';
   document.getElementById('af_title').value  = '';
   document.getElementById('af_date').value   = '';
+  document.getElementById('af_time').value   = '';
   document.getElementById('af_loc').value    = '';
+  const deptSelect = document.getElementById('af_dept');
+  if (deptSelect) deptSelect.value = 'College of Management';
   document.getElementById('af_quota').value  = '0';
   document.getElementById('af_max').value    = '100';
-  document.getElementById('af_emoji').value  = '🏀';
-  document.getElementById('af_color').value  = 'green';
+  document.getElementById('af_emoji').value  = '💻';
+  document.getElementById('af_color').value  = 'blue';
   document.getElementById('af_tags').value   = '';
   document.getElementById('af_desc').value   = '';
   document.getElementById('activityFormModal').classList.add('open');
@@ -924,7 +1047,8 @@ async function saveActivity() {
         description: "",      // 預設詳細描述
         emoji: "📅",           // 預設卡片圖示
         color: "blue",        // 預設卡片顏色
-        host_id: currentUser.id_db
+        host_id: currentUser.id_db,
+    department: dept
     };
 
     try {
@@ -972,8 +1096,12 @@ function openEditActivity(id) {
   document.getElementById('actFormTitle').textContent    = 'Edit Event';
   document.getElementById('actFormSubtitle').textContent = `Editing: ${a.title}`;
   document.getElementById('af_title').value  = a.title;
-  document.getElementById('af_date').value   = a.date;
+  const editDateTime = splitActivityDateTime(a.date);
+  document.getElementById('af_date').value   = editDateTime.date;
+  document.getElementById('af_time').value   = editDateTime.time;
   document.getElementById('af_loc').value    = a.loc;
+  const deptSelect = document.getElementById('af_dept');
+  if (deptSelect) deptSelect.value = a.department || 'College of Management';
   document.getElementById('af_quota').value  = a.quota;
   document.getElementById('af_max').value    = a.max;
   document.getElementById('af_emoji').value  = a.emoji;
@@ -983,27 +1111,49 @@ function openEditActivity(id) {
   document.getElementById('activityFormModal').classList.add('open');
 }
 
+
+function parseActivityDateTime(dateValue, timeValue) {
+  const normalizedDate = (dateValue || '').replace(/\//g, '-');
+  const normalizedTime = timeValue || '00:00';
+  return {
+    event_day: normalizedDate,
+    event_time: normalizedTime
+  };
+}
+
+function splitActivityDateTime(value) {
+  if (!value) return { date: '', time: '' };
+  const normalized = String(value).replace(/\//g, '-').replace('T', ' ');
+  const parts = normalized.split(' ');
+  return {
+    date: parts[0] || '',
+    time: (parts[1] || '').slice(0, 5)
+  };
+}
+
+function formatDateTimeLocal(value) {
+  if (!value) return '';
+  const normalized = String(value).replace(/\//g, '-').replace(' ', 'T');
+  return normalized.slice(0, 16);
+}
+
 // 修改「新增／編輯活動」的表單送出
 async function submitActivityForm() {
   const title = document.getElementById('af_title').value.trim();
   const date   = document.getElementById('af_date').value.trim();
+  const time   = document.getElementById('af_time').value.trim();
   const loc    = document.getElementById('af_loc').value.trim();
   const quota = parseInt(document.getElementById('af_quota').value) || 0;
   const max   = parseInt(document.getElementById('af_max').value)   || 100;
+  const dept  = document.getElementById('af_dept') ? document.getElementById('af_dept').value : 'College of Management';
   const emoji = document.getElementById('af_emoji').value;
   const color = document.getElementById('af_color').value;
   const tagsRaw = document.getElementById('af_tags').value.trim();
   const desc  = document.getElementById('af_desc').value.trim();
 
-  if (!title || !date || !loc) return alert('Please fill in the event name, date/time, and location');
+  if (!title || !date || !time || !loc) return alert('Please fill in the event name, date, time, and location');
 
-  // 將時間拆分（因為後端 SQLite 分開存 event_day 與 event_time）
-  
-  // !!!假設前端 date 格式為 "2026-05-20 14:00" 或是分開的(html預設的日期時間選擇器)
-  // 這裡安全起見，直接把整串字串送給後端的 date，time 留空或簡單切割
-  const parts = date.split(' ');
-  const event_day = parts[0] ? parts[0].replace(/\//g, '-') : date; // 轉換為 YYYY-MM-DD
-  const event_time = parts[1] || "00:00";
+  const { event_day, event_time } = parseActivityDateTime(date, time);
 
   // 整理要傳送給後端的資料包（對應您 Flask 的變數名稱）
   const payload = {
@@ -1017,7 +1167,8 @@ async function submitActivityForm() {
     color: color,
     description: desc,
     category_id: 1 ,// 預設分類 ID，可根據需求調整
-    host_id: currentUser.id_db
+    host_id: currentUser.id_db,
+    department: dept
   };
 
   try {
@@ -1249,7 +1400,8 @@ async function loadEvents() {
       tags: d.tags ? [d.tags] : [],
       quota: d.quota || 0,
       max: d.student_capacity,
-      desc: d.description || '' // backend currently has no desc
+      desc: d.description || '',
+      department: d.department || d.dept || 'College of Management'
     }));
   
     window.allEvents = [...ACTS];
