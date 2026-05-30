@@ -9,17 +9,27 @@ const REGISTRATIONS = {
     { uid:'B10001', name:'John Doe', dept:'CSE', meal:'meat' },
     { uid:'B10002', name:'Jane Smith', dept:'Management', meal:'veg' },
     { uid:'B10003', name:'David Chen', dept:'EE', meal:'meat' },
+    { uid:'B10001', name:'John Doe', dept:'CSE', meal:'meat' },
+    { uid:'B10002', name:'Jane Smith', dept:'Management', meal:'veg' },
+    { uid:'B10003', name:'David Chen', dept:'EE', meal:'meat' },
   ],
   1: [
+    { uid:'B10004', name:'Emily Huang', dept:'Arts', meal:'veg' },
+    { uid:'B10005', name:'Michael Lee', dept:'Design', meal:'meat' },
     { uid:'B10004', name:'Emily Huang', dept:'Arts', meal:'veg' },
     { uid:'B10005', name:'Michael Lee', dept:'Design', meal:'meat' },
   ],
   2: [
     { uid:'B10006', name:'Sarah Chang', dept:'Music', meal:'meat' },
+    { uid:'B10006', name:'Sarah Chang', dept:'Music', meal:'meat' },
   ],
 };
 
 const TAGCOLOR = {
+  'Sports':'green','Competition':'green','Arts':'purple','Handicraft':'orange',
+  'Music':'purple','Eco':'blue','Life':'blue','IT':'blue',
+  'Exhibition':'purple','Lecture':'orange','Culture':'green','Exchange':'green',
+  'Health':'green','Entertainment':'purple'
   'Sports':'green','Competition':'green','Arts':'purple','Handicraft':'orange',
   'Music':'purple','Eco':'blue','Life':'blue','IT':'blue',
   'Exhibition':'purple','Lecture':'orange','Culture':'green','Exchange':'green',
@@ -146,14 +156,17 @@ function renderCards() {
           <div class="act-tags">
             ${a.tags.map(t => `<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('')}
             ${reg ? '<span class="tag green">✓ Registered</span>' : ''}
+            ${reg ? '<span class="tag green">✓ Registered</span>' : ''}
           </div>
         </div>
       </div>
       <div class="act-bottom">
         <div class="progress-wrap">
           <div class="progress-label">${a.quota} / ${a.max} Attending</div>
+          <div class="progress-label">${a.quota} / ${a.max} Attending</div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
         </div>
+        <span class="act-spots">${a.max - a.quota} Spots Left</span>
         <span class="act-spots">${a.max - a.quota} Spots Left</span>
       </div>
     </div>`;
@@ -297,6 +310,7 @@ async function submitReg() {
       const data = await res.json();
       if (!res.ok) {
           alert(data.error || 'Registration failed');
+          alert(data.error || 'Registration failed');
           return;
       }
       
@@ -373,6 +387,7 @@ function openCancelModal(id) {
   cancelTargetId = id;
   const a = ACTS.find(x => x.id === id);
   document.getElementById('cancelMsg').textContent = `Are you sure you want to cancel your registration for "${a.title}"? Your spot will be released.`;
+  document.getElementById('cancelMsg').textContent = `Are you sure you want to cancel your registration for "${a.title}"? Your spot will be released.`;
   document.getElementById('cancelModal').classList.add('open');
 }
 
@@ -400,7 +415,13 @@ async function confirmCancel() {
         alert(data.error || 'Cancellation failed');
         return;
     }
+        alert(data.error || 'Cancellation failed');
+        return;
+    }
 
+    document.getElementById('cancelModal').classList.remove('open');
+    document.getElementById('cancelSuccessMsg').textContent = `Successfully canceled registration for "${a.title}". The spot has been released.`;
+    document.getElementById('cancelSuccessModal').classList.add('open');
     document.getElementById('cancelModal').classList.remove('open');
     document.getElementById('cancelSuccessMsg').textContent = `Successfully canceled registration for "${a.title}". The spot has been released.`;
     document.getElementById('cancelSuccessModal').classList.add('open');
@@ -413,6 +434,16 @@ async function confirmCancel() {
     
       // Update UI button on detail page explicitly
       if (currentDetailId === cancelTargetId) {
+        const btn = document.getElementById('regBtn');
+        btn.textContent = 'Register Now'; btn.className = 'register-btn'; btn.disabled = false;
+        // After loadEvents, ACTS is reloaded so we need to fetch a again to get new quota
+        const reloadedA = ACTS.find(x => x.id === cancelTargetId);
+        document.getElementById('dQuota').textContent = reloadedA ? reloadedA.quota : a.quota;
+    }
+} catch (e) {
+    console.error(e);
+    alert('An error occurred');
+}
         const btn = document.getElementById('regBtn');
         btn.textContent = 'Register Now'; btn.className = 'register-btn'; btn.disabled = false;
         // After loadEvents, ACTS is reloaded so we need to fetch a again to get new quota
@@ -461,6 +492,7 @@ async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value.trim();
   if (!id || !pw) return alert('Please enter both your account ID and password');
+  if (!id || !pw) return alert('Please enter both your account ID and password');
 
   try {
     const res = await fetch(`${API_BASE}/login`, {
@@ -470,6 +502,7 @@ async function doLogin() {
     });
     const data = await res.json();
     if (!res.ok) {
+      alert(data.error || 'Login failed');
       alert(data.error || 'Login failed');
       return;
     }
@@ -493,10 +526,12 @@ async function doLogin() {
   } catch(e) {
     console.error(e);
     alert('An error occurred');
+    alert('An error occurred');
   }
 }
 
 async function doRegister() {
+  const user_id = document.getElementById('rId').value.trim();  // 學號
   const user_id = document.getElementById('rId').value.trim();  // 學號
   const name  = document.getElementById('rName').value.trim();
   const phone = document.getElementById('rPhone').value.trim();
@@ -515,7 +550,11 @@ async function doRegister() {
           id: user_id,       // 學號
           user_id: user_id,  // 主鍵
           pw,
+          id: user_id,       // 學號
+          user_id: user_id,  // 主鍵
+          pw,
           role: selectedAuthRole,
+          name, phone, email, dept
           name, phone, email, dept
       })
     });
@@ -527,10 +566,12 @@ async function doRegister() {
     }
 
     currentUser = { id: user_id, id_db: user_id, name, phone, email, dept };
+    currentUser = { id: user_id, id_db: user_id, name, phone, email, dept };
     currentRole = selectedAuthRole;
 
     if (currentRole === 'admin') {
       const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
+      if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('Incorrect administrator verification code (Hint: nsysu2025)');
       if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('Incorrect administrator verification code (Hint: nsysu2025)');
       closeAuth();
       showAdminInterface();
@@ -543,6 +584,7 @@ async function doRegister() {
   } catch(e) {
     console.error(e);
     alert('An error occurred');
+    alert('An error occurred');
   }
 }
 
@@ -551,7 +593,10 @@ function closeAuth() { document.getElementById('authModal').classList.remove('op
 // =================== MY ACTIVITIES ===================
 function renderMine() {
   const el = document.getElementById('mine-content');
+  if (!el) return;
+
   if (!currentUser) {
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Please log in first to view<br>your registered events</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')" style="margin-top:6px">Go to Login</button></div>`;
     el.innerHTML = `<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Please log in first to view<br>your registered events</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')" style="margin-top:6px">Go to Login</button></div>`;
     return;
   }
@@ -601,11 +646,17 @@ const FIELDS = [
   {key:'phone',label:'Phone No.',  icon:'ti-phone'},
   {key:'email',label:'Email',      icon:'ti-mail'},
   {key:'dept', label:'Department', icon:'ti-school'},
+  {key:'id',   label:'Student ID', icon:'ti-id-badge'},
+  {key:'name', label:'Name',       icon:'ti-user'},
+  {key:'phone',label:'Phone No.',  icon:'ti-phone'},
+  {key:'email',label:'Email',      icon:'ti-mail'},
+  {key:'dept', label:'Department', icon:'ti-school'},
 ];
 
 function renderProfile() {
   const el = document.getElementById('profile-content');
   if (!currentUser) {
+    el.innerHTML = `<div class="login-prompt"><i class="ti ti-user-circle"></i><h3>Not Logged In</h3><p>Log in to view and manage<br>your personal profile</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')">Login</button><button class="lp-btn outline" onclick="switchAuthTab('reg');document.getElementById('authModal').classList.add('open')">Register New Account</button></div>`;
     el.innerHTML = `<div class="login-prompt"><i class="ti ti-user-circle"></i><h3>Not Logged In</h3><p>Log in to view and manage<br>your personal profile</p><button class="lp-btn primary" onclick="document.getElementById('authModal').classList.add('open')">Login</button><button class="lp-btn outline" onclick="switchAuthTab('reg');document.getElementById('authModal').classList.add('open')">Register New Account</button></div>`;
     return;
   }
@@ -619,7 +670,9 @@ function renderProfile() {
     <div class="profile-fields" id="profileFields"></div>
     <div class="edit-bar">
       <button class="save-btn" id="profileEditBtn" onclick="toggleProfileEdit()">${profileEditing?'Save Changes':'Edit Profile'}</button>
+      <button class="save-btn" id="profileEditBtn" onclick="toggleProfileEdit()">${profileEditing?'Save Changes':'Edit Profile'}</button>
     </div>
+    <div style="padding:0 32px 16px"><button class="logout-btn" onclick="logout()">Logout</button></div>`;
     <div style="padding:0 32px 16px"><button class="logout-btn" onclick="logout()">Logout</button></div>`;
   renderFields();
 }
@@ -644,12 +697,21 @@ async function toggleProfileEdit() {
     FIELDS.forEach(f => { const inp = document.getElementById('fi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     profileEditing = false;
     document.getElementById('profileEditBtn').textContent = 'Edit Profile';
+    document.getElementById('profileEditBtn').textContent = 'Edit Profile';
     
     // Save to database
     try {
         const res = await fetch(`${API_BASE}/user`, {
+        const res = await fetch(`${API_BASE}/user`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_db: currentUser.id_db,
+                name:  currentUser.name,
+                phone: currentUser.phone,
+                email: currentUser.email,
+                dept:  currentUser.dept
+            })
             body: JSON.stringify({
                 id_db: currentUser.id_db,
                 name:  currentUser.name,
@@ -663,6 +725,8 @@ async function toggleProfileEdit() {
     } catch(e) {
         console.error("Update failed", e);
         alert('Network error. Failed to save.');
+        console.error("Update failed", e);
+        alert('Network error. Failed to save.');
     }
 
     renderFields();
@@ -674,6 +738,7 @@ async function toggleProfileEdit() {
     if (av)   av.textContent   = currentUser.name.slice(-2);
   } else {
     profileEditing = true;
+    document.getElementById('profileEditBtn').textContent = 'Save Changes';
     document.getElementById('profileEditBtn').textContent = 'Save Changes';
     renderFields();
   }
@@ -693,6 +758,7 @@ function logout() {
 
 // =================== BANNER ===================
 const BANNER_LABELS = ['🔥 Hot', '🎨 New', '🎵 Limited'];
+const BANNER_LABELS = ['🔥 Hot', '🎨 New', '🎵 Limited'];
 const BANNER_GRADIENTS = [
   'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
   'linear-gradient(135deg, #025E73 0%, #F2EBEB 100%)',
@@ -710,6 +776,11 @@ function renderBanner() {
   const items = ACTS.slice(0, 3);
 
   scroll.innerHTML = items.map((a, i) => `
+  <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
+    <div class="label">${BANNER_LABELS[i] || '📅 Event'}</div>
+    <div class="people">${a.quota} / ${a.max} Attending</div>
+    <div class="title">${a.title}</div>
+  </div>
   <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
     <div class="label">${BANNER_LABELS[i] || '📅 Event'}</div>
     <div class="people">${a.quota} / ${a.max} Attending</div>
@@ -902,12 +973,16 @@ function openRegDetail(actId) {
 
   document.getElementById('adminRegDetailTitle').textContent = a.title;
   document.getElementById('adminRegDetailSub').textContent   = `Total ${regs.length} registrations · Meat ${meat} · Vegetarian ${veg}`;
+  document.getElementById('adminRegDetailSub').textContent   = `Total ${regs.length} registrations · Meat ${meat} · Vegetarian ${veg}`;
   let tableHtml = '';
   if (regs.length === 0) {
+    tableHtml = `<div class="empty-state" style="padding:24px 0"><i class="ti ti-users" style="font-size:32px;opacity:.3"></i><p>No registrations yet</p></div>`;
     tableHtml = `<div class="empty-state" style="padding:24px 0"><i class="ti ti-users" style="font-size:32px;opacity:.3"></i><p>No registrations yet</p></div>`;
   } else {
     tableHtml = `
     <div style="margin-bottom:12px;display:flex;gap:8px">
+      <span class="meal-pill meat" style="font-size:13px;padding:4px 12px">🍖 Meat ${meat}</span>
+      <span class="meal-pill veg"  style="font-size:13px;padding:4px 12px">🌿 Veg ${veg}</span>
       <span class="meal-pill meat" style="font-size:13px;padding:4px 12px">🍖 Meat ${meat}</span>
       <span class="meal-pill veg"  style="font-size:13px;padding:4px 12px">🌿 Veg ${veg}</span>
     </div>
@@ -916,6 +991,10 @@ function openRegDetail(actId) {
       <thead>
         <tr>
           <th>#</th>
+          <th>Student ID / Account</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Meal</th>
           <th>Student ID / Account</th>
           <th>Name</th>
           <th>Department</th>
@@ -988,6 +1067,7 @@ function renderAdminRegistrations() {
         </div>
         <div>
           <div class="reg-overview-count">${a.quota}<span>/ ${a.max} Attendees</span></div>
+          <div class="reg-overview-count">${a.quota}<span>/ ${a.max} Attendees</span></div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px">
@@ -1007,6 +1087,8 @@ function renderAdminRegistrations() {
 // =================== ADMIN: ADD / EDIT ACTIVITY ===================
 function openAddActivity() {
   editingActId = null;
+  document.getElementById('actFormTitle').textContent    = 'Create Event';
+  document.getElementById('actFormSubtitle').textContent = 'Fill in event details';
   document.getElementById('actFormTitle').textContent    = 'Create Event';
   document.getElementById('actFormSubtitle').textContent = 'Fill in event details';
   document.getElementById('af_title').value  = '';
@@ -1143,28 +1225,26 @@ async function submitActivityForm() {
   const date   = document.getElementById('af_date').value.trim();
   const time   = document.getElementById('af_time').value.trim();
   const loc    = document.getElementById('af_loc').value.trim();
-  const quota = parseInt(document.getElementById('af_quota').value) || 0;
   const max   = parseInt(document.getElementById('af_max').value)   || 100;
   const dept  = document.getElementById('af_dept') ? document.getElementById('af_dept').value : 'College of Management';
   const emoji = document.getElementById('af_emoji').value;
   const color = document.getElementById('af_color').value;
-  const tagsRaw = document.getElementById('af_tags').value.trim();
   const desc  = document.getElementById('af_desc').value.trim();
 
   if (!title || !date || !time || !loc) return alert('Please fill in the event name, date, time, and location');
 
   const { event_day, event_time } = parseActivityDateTime(date, time);
 
-  // 整理要傳送給後端的資料包（對應您 Flask 的變數名稱）
+  // 整理要傳送給後端的資料包
   const payload = {
     title: title,
     date: event_day,
     time: event_time,
     loc: loc,
     max: max,
-    student_capacity: max, // 同步容量
-    emoji: emoji,
-    color: color,
+    student_capacity: max, 
+    emoji: emoji,        
+    color: color,        
     description: desc,
     category_id: 1 ,// 預設分類 ID，可根據需求調整
     host_id: currentUser.id_db,
@@ -1181,6 +1261,7 @@ async function submitActivityForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
+      if (!res.ok) throw new Error(data.error || 'Update failed');
 
       document.getElementById('activityFormModal').classList.remove('open');
       showAdminSuccess('Event Updated', `"${title}" has been successfully synchronized to the database.`);
@@ -1193,21 +1274,113 @@ async function submitActivityForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Creation failed');
+      if (!res.ok) throw new Error(data.error || 'Creation failed');
 
       document.getElementById('activityFormModal').classList.remove('open');
       showAdminSuccess('Event Created', `"${title}" has been successfully added to the database event list.`);
     }
 
-    // 重新載入資料庫最新資料並重新渲染 UI
-    await loadEvents();
-    renderAdminRegistrations();
+    // 重新載入最新資料
+    if (typeof loadEvents === 'function') await loadEvents();
+    if (typeof loadAllRegistrations === 'function') await loadAllRegistrations();
+    
+    // 重新渲染 UI 畫面
+    if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
+    if (typeof renderAdminRegistrations === 'function') renderAdminRegistrations();
+    if (typeof renderEvents === 'function') renderEvents(); // 同步更新前端探索列表
 
   } catch (e) {
     console.error(e);
     alert('Operation failed: ' + e.message);
   }
 }
+function closeActivityForm() {
+  document.getElementById('activityFormModal')?.classList.remove('open');
+  document.getElementById('adminActFormModal')?.classList.remove('open'); 
+}
 
+// =================== ADMIN: DELETE ===================
+function openDeleteModal(id) {
+  deleteTargetId = id;
+  const a = ACTS.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('adminDeleteMsg').textContent = `Are you sure you want to permanently delete "${a.title}"? This operation cannot be undone and all registration records will be cleared.`;
+  document.getElementById('adminDeleteModal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('adminDeleteModal')?.classList.remove('open');
+  deleteTargetId = null;
+}
+
+async function confirmDeleteActivity() {
+  if (deleteTargetId === null) return;
+  
+  const a = ACTS.find(x => x.id === deleteTargetId);
+  
+  try {
+    const res = await fetch(`${API_BASE}/events/${deleteTargetId}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    
+    if (!res.ok) throw new Error(data.error || 'Delete failed');
+
+    document.getElementById('adminDeleteModal')?.classList.remove('open');
+    if (typeof showAdminSuccess === 'function') {
+        showAdminSuccess('Event Deleted', `"${a ? a.title : 'The event'}" has been permanently removed.`);
+    } else {
+        alert('Event Deleted successfully!');
+    }
+    
+    await loadEvents();
+    await loadAllRegistrations(); 
+    
+    if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
+    if (typeof renderAdminRegistrations === 'function') renderAdminRegistrations();
+
+  } catch (e) {
+    console.error(e);
+    alert('Operation failed: ' + e.message);
+  }
+
+  deleteTargetId = null;
+}
+
+// 初始化時綁定搜尋與篩選事件 不重整網頁的即時活動查詢
+document.getElementById('searchKeyword')?.addEventListener('input', doFilter);
+document.getElementById('filterTag')?.addEventListener('change', doFilter);
+
+function doFilter() {
+    const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
+    const selectedTag = document.getElementById('filterTag').value;
+
+    // 確保全域活動變數存在，防範未載入完成時噴錯
+    const eventsToFilter = window.allEvents || window.ACTS || [];
+
+    const filteredResult = eventsToFilter.filter(act => {
+        // 關鍵字比對
+        const matchText = act.title.toLowerCase().includes(keyword) || 
+                          act.loc.toLowerCase().includes(keyword) ||
+                          (act.description && act.description.toLowerCase().includes(keyword));
+        
+        // 標籤安全比對：支援 act.tags 為字串或陣列的情況
+        let matchTag = false;
+        if (selectedTag === 'all') {
+            matchTag = true;
+        } else if (typeof act.tags === 'string') {
+            matchTag = act.tags === selectedTag;
+        } else if (Array.isArray(act.tags)) {
+            matchTag = act.tags.includes(selectedTag);
+        }
+
+        return matchText && matchTag;
+    });
+
+    if (typeof renderActivityList === 'function') {
+        renderActivityList(filteredResult); 
+    }
+}
 
 function closeActivityForm() {
   document.getElementById('activityFormModal').classList.remove('open');
@@ -1217,6 +1390,7 @@ function closeActivityForm() {
 function openDeleteModal(id) {
   deleteTargetId = id;
   const a = ACTS.find(x => x.id === id);
+  document.getElementById('adminDeleteMsg').textContent = `Are you sure you want to permanently delete "${a.title}"? This operation cannot be undone and all registration records will be cleared.`;
   document.getElementById('adminDeleteMsg').textContent = `Are you sure you want to permanently delete "${a.title}"? This operation cannot be undone and all registration records will be cleared.`;
   document.getElementById('adminDeleteModal').classList.add('open');
 }
@@ -1238,9 +1412,11 @@ async function confirmDeleteActivity() {
     const data = await res.json();
     
     if (!res.ok) throw new Error(data.error || 'Delete failed');
+    if (!res.ok) throw new Error(data.error || 'Delete failed');
 
     // 關閉刪除確認彈窗
     document.getElementById('adminDeleteModal').classList.remove('open');
+    showAdminSuccess('Event Deleted', `"${a ? a.title : 'The event'}" has been permanently removed from the database.`);
     showAdminSuccess('Event Deleted', `"${a ? a.title : 'The event'}" has been permanently removed from the database.`);
     
     // 重新從資料庫載入最新活動列表
@@ -1255,6 +1431,7 @@ async function confirmDeleteActivity() {
 
   } catch (e) {
     console.error(e);
+    alert('Delete failed: ' + e.message);
     alert('Delete failed: ' + e.message);
   }
 
@@ -1301,6 +1478,11 @@ const ADMIN_FIELDS = [
   {key:'phone',label:'Phone',       icon:'ti-phone'},
   {key:'email',label:'Email',       icon:'ti-mail'},
   {key:'dept', label:'Organization',icon:'ti-building'},
+  {key:'id',   label:'Account',     icon:'ti-id-badge'},
+  {key:'name', label:'Name',        icon:'ti-user'},
+  {key:'phone',label:'Phone',       icon:'ti-phone'},
+  {key:'email',label:'Email',       icon:'ti-mail'},
+  {key:'dept', label:'Organization',icon:'ti-building'},
 ];
 
 let adminProfileEditing = false;
@@ -1316,13 +1498,16 @@ function renderAdminProfile() {
       <div class="profile-dept" style="display:flex;align-items:center;gap:5px;margin-top:4px">
         <i class="ti ti-shield-check" style="color:var(--primary)"></i>
         Administrator · ${currentUser.dept}
+        Administrator · ${currentUser.dept}
       </div>
     </div>
     <div class="profile-fields" id="adminProfileFields"></div>
     <div class="edit-bar">
       <button class="save-btn" id="adminProfileEditBtn" onclick="toggleAdminProfileEdit()">${adminProfileEditing?'Save Changes':'Edit Profile'}</button>
+      <button class="save-btn" id="adminProfileEditBtn" onclick="toggleAdminProfileEdit()">${adminProfileEditing?'Save Changes':'Edit Profile'}</button>
     </div>
     <div style="padding:0 32px 16px">
+      <button class="logout-btn" onclick="adminLogout()">Logout Admin</button>
       <button class="logout-btn" onclick="adminLogout()">Logout Admin</button>
     </div>`;
   renderAdminFields();
@@ -1348,9 +1533,11 @@ async function toggleAdminProfileEdit() {
     ADMIN_FIELDS.forEach(f => { const inp = document.getElementById('afi_'+f.key); if (inp) currentUser[f.key] = inp.value; });
     adminProfileEditing = false;
     document.getElementById('adminProfileEditBtn').textContent = 'Edit Profile';
+    document.getElementById('adminProfileEditBtn').textContent = 'Edit Profile';
     
     // Save to database
     try {
+        const res = await fetch(`${API_BASE}/user`, {
         const res = await fetch(`${API_BASE}/user`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -1361,10 +1548,21 @@ async function toggleAdminProfileEdit() {
                 email: currentUser.email,
                 dept:  currentUser.dept
             })
+            body: JSON.stringify({
+                id_db: currentUser.id_db,
+                name:  currentUser.name,
+                phone: currentUser.phone,
+                email: currentUser.email,
+                dept:  currentUser.dept
+            })
         });
         const result = await res.json();
         if (!res.ok) alert('Save failed：' + (result.error || 'Unknow error'));
+        const result = await res.json();
+        if (!res.ok) alert('Save failed：' + (result.error || 'Unknow error'));
     } catch(e) {
+        console.error("Update failed", e);
+        alert('Network error, save failed.');
         console.error("Update failed", e);
         alert('Network error, save failed.');
     }
@@ -1378,6 +1576,7 @@ async function toggleAdminProfileEdit() {
   } else {
     adminProfileEditing = true;
     document.getElementById('adminProfileEditBtn').textContent = 'Save Changes';
+    document.getElementById('adminProfileEditBtn').textContent = 'Save Changes';
     renderAdminFields();
   }
 }
@@ -1386,7 +1585,6 @@ async function toggleAdminProfileEdit() {
 async function loadEvents() {
   try {
     const res = await fetch(`${API_BASE}/events`);
-    if (!res.ok) throw new Error('API response not ok');
     const data = await res.json();
     
     // Convert API data to matching ACTS structure
