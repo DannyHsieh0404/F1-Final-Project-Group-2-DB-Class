@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
 <head>
-    <meta charset="utf-8" />
-    <title>College of Management, NSYSU — 活動平台</title>
-    <link href="test.css" type="text/css" rel="stylesheet"/>
-    <script src="test.js" type="text/javascript" defer></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <meta charset="utf-8" />
+  <title>College of Management, NSYSU — Event Platform</title>
+  <link href="test.css" type="text/css" rel="stylesheet"/>
+  <script src="test.js" type="text/javascript" defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 </head>
 
 <div id="app">
@@ -19,10 +19,10 @@
     <div class="screens-wrap">
 
 <div class="screen active" id="screen-events">
-        <div class="page-header">
-          <h1>探索活動</h1>
-          <p>找到屬於你的精彩體驗</p>
-        </div>
+    <div class="page-header">
+      <h1>Explore Events</h1>
+      <p>Find the perfect experience for you</p>
+    </div>
         
         <div class="banner-wrap">
           <div class="banner-scroll" id="bannerScroll"></div>
@@ -32,29 +32,35 @@
         <div class="search-filter-bar" style="padding: 16px 32px 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
           
           <div style="display: flex; flex: 2; min-width: 250px; gap: 4px;">
-            <input type="text" id="searchKeyword" placeholder="🔍 搜尋活動名稱、地點或描述..." style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px 0 0 10px; font-size: 14px; margin-right: -4px;">
-            <button id="searchBtn" style="padding: 10px 16px; background: var(--primary, #4f46e5); color: white; border: none; border-radius: 0 10px 10px 0; font-size: 14px; cursor: pointer; font-weight: 500;">搜尋</button>
+            <input type="text" id="searchKeyword" placeholder="🔍 Search event name, location or description..." style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px 0 0 10px; font-size: 14px; margin-right: -4px;">
+            <button id="searchBtn" style="padding: 10px 16px; background: var(--primary, #4f46e5); color: white; border: none; border-radius: 0 10px 10px 0; font-size: 14px; cursor: pointer; font-weight: 500;">Search</button>
           </div>
 
           <select id="filterTag" style="flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white;">
-            <option value="all">全部標籤</option>
-            <option value="體育">🏀 體育</option>
-            <option value="藝術">🎨 藝術</option>
-            <option value="音樂">🎵 音樂</option>
-            <option value="講座">🧠 講座</option>
-            <option value="資訊">💻 資訊</option>
+            <option value="all">All Tags</option>
+            <option value="🏀">🏀 Competetion</option>
+            <option value="🎨">🎨 Arts</option>
+            <option value="🎵">🎵 Music</option>
+            <option value="🌿">🌿 Eco / Environment</option>
+            <option value="💻">💻 IT / Info</option>
+            <option value="📸">📸 Photography</option>
+            <option value="🧠">🧠 Lectures</option>
+            <option value="🌏">🌏 Culture</option>
+            <option value="🏃">🏃 Sports & Exercise</option>
+            <option value="🎮">🎮 Gaming / Esports</option>
+            <option value="🍳">🍳 Lifestyle</option>
           </select>
         </div>
 
-        <div class="section-title">所有活動</div>
+        <div class="section-title">All Events</div>
         <div class="activity-list"></div>
       </div>
 
       <!-- SCREEN 2: MY ACTIVITIES -->
       <div class="screen" id="screen-mine">
         <div class="page-header">
-          <h1>我的活動</h1>
-          <p>已報名的活動一覽</p>
+          <h1>My Events</h1>
+          <p>List of registered events</p>
         </div>
         <div id="mine-content"></div>
       </div>
@@ -79,10 +85,10 @@
             <div class="sheet-info-row"><i class="ti ti-map-pin"></i><span id="dLocation"></span></div>
             <div class="sheet-desc" id="dDesc"></div>
             <div class="quota-card">
-              <div><div class="quota-num" id="dQuota"></div><div class="quota-label">已報名人數</div></div>
-              <div style="text-align:right"><div class="quota-num" id="dMax"></div><div class="quota-label">總名額</div></div>
+              <div> <div class="quota-num" id="dQuota"></div> <div class="quota-label">Registered</div> </div>
+              <div style="text-align:right"><div class="quota-num" id="dMax"></div> <div class="quota-label">Total Capacity</div></div>
             </div>
-            <button class="register-btn" onclick="handleRegister()" id="regBtn">立即報名</button>
+            <button class="register-btn" onclick="handleRegister()" id="regBtn">Register Now</button>
           </div>
         </div>
       </div>
@@ -91,12 +97,12 @@
     <!-- BOTTOM / SIDE NAV -->
     <nav class="nav" id="mainNav">
       <div class="nav-logo" id="navLogo" style="display:none">
-        <h2>中山大學</h2>
-        <p>活動報名平台</p>
+        <h2>NSYSU</h2>
+        <p>Event Registration Platform</p>
       </div>
-      <div class="nav-item active" onclick="switchTab(0)" id="nav0"><i class="ti ti-compass"></i>探索</div>
-      <div class="nav-item" onclick="switchTab(1)" id="nav1"><i class="ti ti-calendar-event"></i>我的活動</div>
-      <div class="nav-item" onclick="switchTab(2)" id="nav2"><i class="ti ti-user-circle"></i>個人資料</div>
+      <div class="nav-item active" onclick="switchTab(0)" id="nav0"><i class="ti ti-compass"></i>Explore</div>
+      <div class="nav-item" onclick="switchTab(1)" id="nav1"><i class="ti ti-calendar-event"></i>My Events</div>
+      <div class="nav-item" onclick="switchTab(2)" id="nav2"><i class="ti ti-user-circle"></i>Profile</div>
     </nav>
 
   </div><!-- end userApp -->
@@ -108,23 +114,29 @@
 
       <!-- ADMIN SCREEN 1: DASHBOARD -->
       <div class="screen active" id="admin-screen-dashboard">
-        <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div class="page-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px">
           <div>
-            <h1>管理後台</h1>
-            <p>活動總覽與快速操作</p>
+            <h1>Admin Dashboard</h1>
+            <p>Overview and quick actions</p>
           </div>
           <div id="adminHeaderBadge" style="font-size:12px;color:var(--text-muted);padding:6px 12px;background:var(--primary-pale);border-radius:20px;font-weight:600;color:var(--primary)"></div>
         </div>
-        <div id="admin-stats-row" style="display:flex;gap:12px;padding:16px 32px 0;flex-wrap:wrap"></div>
-        <div class="section-title" style="margin-top:8px">所有活動 <span onclick="openAddActivity()">＋ 新增活動</span></div>
+
+        <!-- 上方區塊：融合總數與新增活動的「單一大長卡」 -->
+        <div id="admin-combined-card-zone" style="padding: 0 36px;">
+          <!-- 由 JavaScript 動態生成 -->
+        </div>
+
+        <!-- 下方區塊：活動列表直接展開 -->
+        <div class="section-title" style="margin-top:24px; margin-bottom:12px; font-weight:700; font-size:16px;">All Published Events</div>
         <div class="activity-list" id="admin-activity-list"></div>
       </div>
 
       <!-- ADMIN SCREEN 2: REGISTRATIONS -->
       <div class="screen" id="admin-screen-registrations">
         <div class="page-header">
-          <h1>報名管理</h1>
-          <p>查看各活動報名詳情</p>
+          <h1>Registration Management</h1>
+          <p>View registration details for each event</p>
         </div>
         <div id="admin-reg-content" style="padding:16px 32px;display:flex;flex-direction:column;gap:14px;padding-bottom:24px"></div>
       </div>
@@ -139,59 +151,57 @@
     <!-- ADMIN SIDE NAV -->
     <nav class="nav" id="adminNav">
       <div class="nav-logo" id="adminNavLogo" style="display:none">
-        <h2>中山大學</h2>
-        <p>管理後台</p>
+        <h2>NSYSU</h2>
+        <p>Admin Dashboard</p>
       </div>
-      <div class="nav-item active" onclick="switchAdminTab(0)" id="anav0"><i class="ti ti-layout-dashboard"></i>總覽</div>
-      <div class="nav-item" onclick="switchAdminTab(1)" id="anav1"><i class="ti ti-users"></i>報名管理</div>
-      <div class="nav-item" onclick="switchAdminTab(2)" id="anav2"><i class="ti ti-user-circle"></i>管理員資料</div>
+      <div class="nav-item active" onclick="switchAdminTab(0)" id="anav0"><i class="ti ti-layout-dashboard"></i>Overview</div>
+      <div class="nav-item" onclick="switchAdminTab(1)" id="anav1"><i class="ti ti-users"></i>Registration Management</div>
+      <div class="nav-item" onclick="switchAdminTab(2)" id="anav2"><i class="ti ti-user-circle"></i>Admin Profile</div>
     </nav>
 
   </div><!-- end adminApp -->
 
   <!-- ===== AUTH MODAL (shared) ===== -->
-  <div class="modal-wrap" id="authModal">
+  </div><div class="modal-wrap" id="authModal">
     <div class="modal">
-      <h2>歡迎使用活動平台</h2>
-      <p>請選擇身份並登入或註冊</p>
+      <h2>Welcome to the Event Platform</h2>
+      <p>Please select your role to sign in or sign up</p>
 
       <!-- ROLE SELECTOR -->
       <div class="role-selector" id="roleSelector">
         <div class="role-btn active" id="roleUser" onclick="selectRole('user')">
           <i class="ti ti-user"></i>
-          <span>一般使用者</span>
+          <span>General User</span>
         </div>
         <div class="role-btn" id="roleAdmin" onclick="selectRole('admin')">
           <i class="ti ti-shield-check"></i>
-          <span>管理員</span>
+          <span>Admin</span>
         </div>
-      </div>
-
-      <div class="modal-tabs">
-        <div class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">登入</div>
-        <div class="modal-tab" id="tabReg" onclick="switchAuthTab('reg')">註冊</div>
       </div>
 
       <!-- LOGIN FORM -->
-      <div class="modal-form" id="loginForm">
-        <input type="text" placeholder="學號" id="loginId">
-        <input type="password" placeholder="密碼" id="loginPw">
-        <button class="modal-submit" onclick="doLogin()">登入</button>
+      <div class="modal-tabs">
+        <div class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</div>
+        <div class="modal-tab" id="tabReg" onclick="switchAuthTab('reg')">Sign Up</div>
       </div>
 
-      <!-- REGISTER FORM -->
+      <div class="modal-form" id="loginForm">
+        <input type="text" placeholder="Student ID / Account " id="loginId">
+        <input type="password" placeholder="Password" id="loginPw">
+        <button class="modal-submit" onclick="doLogin()">Sign In</button>
+      </div>
+
       <div class="modal-form" id="regForm" style="display:none">
-        <input type="text" placeholder="學號" id="rId">
-        <input type="text" placeholder="姓名" id="rName">
-        <input type="text" placeholder="電話號碼" id="rPhone">
-        <input type="email" placeholder="電子郵件" id="rEmail">
-        <input type="text" placeholder="系所 / 單位" id="rDept">
-        <input type="password" placeholder="密碼" id="rPw">
-        <!-- Admin reg extra: admin code -->
+        <input type="text" placeholder="Student ID / Account" id="rId">
+        <input type="text" placeholder="Full Name" id="rName">
+        <input type="text" placeholder="Phone Number" id="rPhone">
+        <input type="email" placeholder="Email Address" id="rEmail">
+        <input type="text" placeholder="Department / Organizaiton" id="rDept">
+        <input type="password" placeholder="Password" id="rPw">
         <div id="adminCodeWrap" style="display:none">
-          <input type="password" placeholder="管理員驗證碼" id="rAdminCode">
+          <input type="password" placeholder="Admin Verification Code" id="rAdminCode">
         </div>
-        <button class="modal-submit" onclick="doRegister()">註冊</button>
+        <button class="modal-submit" onclick="doRegister()">Sign Up</button>
       </div>
 
     </div>
@@ -200,14 +210,14 @@
   <!-- MEAL MODAL -->
   <div class="modal-wrap" id="mealModal">
     <div class="modal">
-      <h2>選擇餐點</h2>
-      <p>請選擇您的餐點偏好</p>
+      <h2>Select Meal Preference</h2>
+      <p>Please choose your meal preference</p>
       <div class="meal-opt">
-        <button class="meal-btn" id="meatBtn" onclick="selectMeal('meat')"><i class="ti ti-meat"></i>葷食</button>
-        <button class="meal-btn" id="vegBtn" onclick="selectMeal('veg')"><i class="ti ti-leaf"></i>素食</button>
+        <button class="meal-btn" id="meatBtn" onclick="selectMeal('meat')"><i class="ti ti-meat"></i>Non-Vegetarian</button>
+        <button class="meal-btn" id="vegBtn" onclick="selectMeal('veg')"><i class="ti ti-leaf"></i>Vegetarian</button>
       </div>
-      <button class="modal-submit" onclick="submitReg()" id="submitMealBtn" style="opacity:0.5;pointer-events:none">確認報名</button>
-      <button class="modal-cancel" onclick="closeMeal()">取消</button>
+      <button class="modal-submit" onclick="submitReg()" id="submitMealBtn" style="opacity:0.5;pointer-events:none">Confirm Registration</button>
+      <button class="modal-cancel" onclick="closeMeal()">Cancel</button>
     </div>
   </div>
 
@@ -216,10 +226,10 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle success"><i class="ti ti-check"></i></div>
-        <h2 style="font-size:17px;font-weight:800">報名成功！</h2>
+        <h2 style="font-size:17px;font-weight:800">Registration Successful!</h2>
         <p id="successMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
       </div>
-      <button class="modal-submit" onclick="goToMine()">查看我的活動</button>
+      <button class="modal-submit" onclick="goToMine()">View My Events</button>
     </div>
   </div>
 
@@ -228,11 +238,11 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle cancel"><i class="ti ti-alert-triangle"></i></div>
-        <h2 style="font-size:17px;font-weight:800">確認取消報名？</h2>
+        <h2 style="font-size:17px;font-weight:800">Confirm Cancellation?</h2>
         <p id="cancelMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
       </div>
-      <button class="modal-submit" style="background:#EF4444" onclick="confirmCancel()">確認取消</button>
-      <button class="modal-cancel" onclick="closeCancelModal()">返回</button>
+      <button class="modal-submit" style="background:#EF4444" onclick="confirmCancel()">Confirm Cancel</button>
+      <button class="modal-cancel" onclick="closeCancelModal()">Back</button>
     </div>
   </div>
 
@@ -241,53 +251,60 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle cancel"><i class="ti ti-x"></i></div>
-        <h2 style="font-size:17px;font-weight:800">已取消報名</h2>
+        <h2 style="font-size:17px;font-weight:800">Registration Cancelled</h2>
         <p id="cancelSuccessMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
       </div>
-      <button class="modal-submit" onclick="closeCancelSuccess()">確定</button>
+      <button class="modal-submit" onclick="closeCancelSuccess()">OK</button>
     </div>
   </div>
 
   <!-- ADMIN: ADD / EDIT ACTIVITY MODAL -->
   <div class="modal-wrap" id="activityFormModal">
     <div class="modal" style="width:480px;max-width:95vw">
-      <h2 id="actFormTitle">新增活動</h2>
-      <p id="actFormSubtitle">填寫活動資訊</p>
+      <h2 id="actFormTitle">Add Event</h2>
+      <p id="actFormSubtitle">Fill out event information</p>
       <div class="modal-form" style="gap:10px">
-        <input type="text" placeholder="活動名稱" id="af_title">
-        <div style="display:flex;gap:8px">
-          <input type="text" placeholder="日期時間 (e.g. 2025/06/01 14:00)" id="af_date" style="flex:1">
-          <input type="text" placeholder="地點" id="af_loc" style="flex:1">
+        <input type="text" placeholder="Activity Name" id="af_title">
+        <div class="activity-datetime-row">
+          <label class="form-field-label" for="af_date">
+            <span>Date</span>
+            <input type="date" id="af_date">
+          </label>
+          <label class="form-field-label" for="af_time">
+            <span>Time</span>
+            <input type="time" id="af_time">
+          </label>
         </div>
+        <input type="text" placeholder="Location" id="af_loc">
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="已報名人數由系統自動計算">
-          <input type="number" placeholder="總名額" id="af_max" min="1" style="flex:1">
+          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="Automatically calculated">
+          <input type="number" placeholder="Total Quota" id="af_max" min="1" style="flex:1">
         </div>
         <div style="display:flex;gap:8px">
           <select id="af_emoji" style="flex:1;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:16px;background:var(--bg);color:var(--text);font-family:inherit">
-            <option value="🏀">🏀 體育</option>
-            <option value="🎨">🎨 藝術</option>
-            <option value="🎵">🎵 音樂</option>
-            <option value="🌿">🌿 環保</option>
-            <option value="💻">💻 資訊</option>
-            <option value="📸">📸 攝影</option>
-            <option value="🧠">🧠 講座</option>
-            <option value="🌏">🌏 文化</option>
-            <option value="🏃">🏃 運動</option>
-            <option value="🎮">🎮 電競</option>
-            <option value="🍳">🍳 生活</option>
+            <option value="🏀">🏀 Competetion</option>
+            <option value="🎨">🎨 Arts</option>
+            <option value="🎵">🎵 Music</option>
+            <option value="🌿">🌿 Eco / Environment</option>
+            <option value="💻">💻 IT / Info</option>
+            <option value="📸">📸 Photography</option>
+            <option value="🧠">🧠 Lectures</option>
+            <option value="🌏">🌏 Culture</option>
+            <option value="🏃">🏃 Sports & Exercise</option>
+            <option value="🎮">🎮 Gaming / Esports</option>
+            <option value="🍳">🍳 Lifestyle</option>
           </select>
           <select id="af_color" style="flex:1;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit">
-            <option value="green">綠色</option>
-            <option value="orange">橙色</option>
-            <option value="purple">紫色</option>
-            <option value="blue">藍色</option>
+            <option value="green">Green</option>
+            <option value="orange">Orange</option>
+            <option value="purple">Purple</option>
+            <option value="blue">Blue</option>
           </select>
         </div>
-        <input type="text" placeholder="標籤（逗號分隔，如：體育,競賽）" id="af_tags">
-        <textarea id="af_desc" placeholder="活動描述" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;line-height:1.6"></textarea>
-        <button class="modal-submit" onclick="submitActivityForm()">儲存</button>
-        <button class="modal-cancel" onclick="closeActivityForm()">取消</button>
+        <input type="text" placeholder="Tags（Divided by “,” eg: sports, competetion）" id="af_tags">
+        <textarea id="af_desc" placeholder="Description" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;line-height:1.6"></textarea>
+        <button class="modal-submit" onclick="submitActivityForm()">Save</button>
+        <button class="modal-cancel" onclick="closeActivityForm()">Cancel</button>
       </div>
     </div>
   </div>
@@ -297,11 +314,11 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle cancel"><i class="ti ti-trash"></i></div>
-        <h2 style="font-size:17px;font-weight:800">確認刪除活動？</h2>
+        <h2 style="font-size:17px;font-weight:800">Confirm Event Deletion?</h2>
         <p id="adminDeleteMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
       </div>
-      <button class="modal-submit" style="background:#EF4444" onclick="confirmDeleteActivity()">確認刪除</button>
-      <button class="modal-cancel" onclick="closeDeleteModal()">返回</button>
+      <button class="modal-submit" style="background:#EF4444" onclick="confirmDeleteActivity()">Confirm Delete</button>
+      <button class="modal-cancel" onclick="closeDeleteModal()">Back</button>
     </div>
   </div>
 
@@ -311,7 +328,7 @@
       <h2 id="adminRegDetailTitle"></h2>
       <p id="adminRegDetailSub" style="margin-bottom:12px"></p>
       <div id="adminRegDetailBody"></div>
-      <button class="modal-submit" style="margin-top:8px" onclick="closeRegDetail()">關閉</button>
+      <button class="modal-submit" style="margin-top:8px" onclick="closeRegDetail()">Close</button>
     </div>
   </div>
 
@@ -320,10 +337,10 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle success"><i class="ti ti-check"></i></div>
-        <h2 style="font-size:17px;font-weight:800" id="adminSuccessTitle">操作成功</h2>
+        <h2 style="font-size:17px;font-weight:800" id="adminSuccessTitle">Action successful</h2>
         <p id="adminSuccessMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
       </div>
-      <button class="modal-submit" onclick="closeAdminSuccess()">確定</button>
+      <button class="modal-submit" onclick="closeAdminSuccess()">OK</button>
     </div>
   </div>
 
