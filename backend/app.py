@@ -289,13 +289,10 @@ def login():
                 expected_db_role = 'Organizer' if login_role == 'admin' else 'Student'
 
             # 3. [Critical Defense] Compare "the claimed role" with "the real database role"
-            # 3. [Critical Defense] Compare "the claimed role" with "the real database role"
-                if db_role != expected_db_role:
                 if db_role != expected_db_role:
                 # Password is correct, but role does not match! Precisely return 403 Forbidden to deny access.
                     return jsonify({"error": "Permission mismatch. You cannot log in as this role."}), 403
 
-                # 4. Security check passed, allow login
                 # 4. Security check passed, allow login
                 return jsonify({
                     "success": True, 
@@ -311,14 +308,11 @@ def login():
                     }
                 })
         return jsonify({"error": "Wrong Student ID/ Account or Password"}), 401
-        return jsonify({"error": "Wrong Student ID/ Account or Password"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
 
-
-# 7. User Registration
 
 # 7. User Registration
 @app.route('/api/register_user', methods=['POST'])
