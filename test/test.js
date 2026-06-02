@@ -5,16 +5,10 @@ let ACTS = [];
 
 const REGISTRATIONS = {
   0: [
-    { uid:'B10001', name:'John Doe', dept:'CSE', meal:'meat' },
-    { uid:'B10002', name:'Jane Smith', dept:'Management', meal:'veg' },
-    { uid:'B10003', name:'David Chen', dept:'EE', meal:'meat' },
   ],
   1: [
-    { uid:'B10004', name:'Emily Huang', dept:'Arts', meal:'veg' },
-    { uid:'B10005', name:'Michael Lee', dept:'Design', meal:'meat' },
   ],
   2: [
-    { uid:'B10006', name:'Sarah Chang', dept:'Music', meal:'meat' },
   ],
 };
 
@@ -33,12 +27,11 @@ let currentRole = null; // 'user' | 'admin'
 let myActivities = [];
 let currentDetailId = null;
 let selectedMeal = null;
-let mealModalMode = 'register'; // 'register' | 'update'
+let mealModalMode = 'register'; // 'register' 
 let pendingAfterAuth = false;
 let cancelTargetId = null;
 let profileEditing = false;
 let selectedAuthRole = 'user';
-let nextActId = ACTS.length;
 
 // Admin state
 let editingActId = null;
@@ -214,23 +207,25 @@ function openDetail(id) {
 
   const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
-  const mealUpdateBtn = document.getElementById('mealUpdateBtn');
-  if (already) {
+  
+  if (!currentUser) {
+    btn.textContent = 'Register Now';
+    btn.className = 'register-btn';
+    btn.disabled = false;
+  } else if (already) {
     btn.textContent = '✕ Cancel Registration';
     btn.className = 'register-btn cancel';
     btn.disabled = false;
-    if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
   } else if (a.quota >= a.max) {
-    btn.textContent = 'Fully Booked';
+    btn.textContent = 'Registration Full';
     btn.className = 'register-btn';
     btn.disabled = true;
-    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   } else {
     btn.textContent = 'Register Now';
     btn.className = 'register-btn';
     btn.disabled = false;
-    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   }
+
   document.getElementById('detailOverlay').classList.add('open');
 }
 
@@ -260,20 +255,6 @@ function handleRegister() {
   }
 }
 
-function openMealUpdateModal(id) {
-  const registered = myActivities.find(m => m.id === id);
-  if (!registered) return;
-  currentDetailId = id;
-  mealModalMode = 'update';
-  selectedMeal = registered.meal || null;
-  document.getElementById('meatBtn').classList.toggle('selected', selectedMeal === 'meat');
-  document.getElementById('vegBtn').classList.toggle('selected', selectedMeal === 'veg');
-  const submitBtn = document.getElementById('submitMealBtn');
-  submitBtn.textContent = 'Save Meal Preference';
-  submitBtn.style.opacity = selectedMeal ? '1' : '0.5';
-  submitBtn.style.pointerEvents = selectedMeal ? 'auto' : 'none';
-  document.getElementById('mealModal').classList.add('open');
-}
 
 function selectMeal(type) {
   selectedMeal = type;
@@ -333,8 +314,7 @@ async function submitReg() {
 
     const btn = document.getElementById('regBtn');
     btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel';
-    const mealUpdateBtn = document.getElementById('mealUpdateBtn');
-    if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
+
     const reloaded = ACTS.find(x => x.id === currentDetailId);
     if (reloaded) document.getElementById('dQuota').textContent = reloaded.quota;
   } catch (e) {
@@ -483,6 +463,9 @@ async function doLogin() {
     currentUser = data.user;
     currentRole = selectedAuthRole;
 
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    localStorage.setItem('currentRole', currentRole);
+
     closeAuth();
     resetFilter(); // 登入時重置篩選
 
@@ -492,7 +475,16 @@ async function doLogin() {
       showUserInterface();
       renderProfile();
       await loadMyActivities();
-      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+      if (pendingAfterAuth) {
+        pendingAfterAuth = false;
+        const already = myActivities.find(m => m.id === currentDetailId);
+        if (already) {
+        // 已報名，直接開取消確認
+        openCancelModal(currentDetailId);
+        } else {
+          handleRegister();
+        }
+      }
     }
   } catch(e) {
     console.error(e);
@@ -500,6 +492,7 @@ async function doLogin() {
   }
 }
 
+//登入登出區
 async function doRegister() {
   const user_id = document.getElementById('rId').value.trim();
   const name  = document.getElementById('rName').value.trim();
@@ -523,6 +516,9 @@ async function doRegister() {
     currentUser = { id: user_id, id_db: user_id, name, phone, email, dept };
     currentRole = selectedAuthRole;
 
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    localStorage.setItem('currentRole', currentRole);
+
     if (currentRole === 'admin') {
       const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
       if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('Incorrect administrator verification code (Hint: nsysu2025)');
@@ -534,16 +530,61 @@ async function doRegister() {
       resetFilter(); // 註冊為一般使用者時重置篩選
       showUserInterface();
       renderProfile();
-      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+      await loadMyActivities();
+      if (pendingAfterAuth) {
+        pendingAfterAuth = false;
+        const already = myActivities.find(m => m.id === currentDetailId);
+        if (already) {
+          openCancelModal(currentDetailId);
+      } else {
+        handleRegister();
+      }
     }
+  }
   } catch(e) {
     console.error(e);
     alert('An error occurred');
   }
 }
 
-function closeAuth() { document.getElementById('authModal').classList.remove('open'); }
+function logout() {
+  document.getElementById('logoutConfirmModal').classList.add('open');
+}
 
+function adminLogout() {
+  document.getElementById('logoutConfirmModal').classList.add('open');
+}
+
+function confirmLogout() {
+  document.getElementById('logoutConfirmModal').classList.remove('open');
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('currentRole');
+  currentUser = null;
+  currentRole = null;
+  profileEditing = false;
+  myActivities = [];
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+  // admin nav 清理
+  const nav = document.getElementById('adminNav');
+  const badge = nav.querySelector('.admin-badge-nav');
+  if (badge) badge.remove();
+  const bottom = nav.querySelector('.nav-bottom');
+  if (bottom) bottom.remove();
+  resetFilter();
+  showUserInterface();
+  renderProfile();
+  switchTab(0);
+}
+
+function closeAuth() { 
+  document.getElementById('authModal').classList.remove('open');
+  pendingAfterAuth = false; // 取消待執行的報名
+}
+
+function closeAuthOnBg(e) {
+  if (e.target === document.getElementById('authModal')) closeAuth();
+}
 // =================== MY ACTIVITIES ===================
 function renderMine() {
   const el = document.getElementById('mine-content');
@@ -658,19 +699,6 @@ async function toggleProfileEdit() {
   }
 }
 
-function logout() {
-  currentUser = null;
-  currentRole = null;
-  profileEditing = false;
-  myActivities = [];
-  document.getElementById('loginId').value = '';
-  document.getElementById('loginPw').value = '';
-  resetFilter(); // 登出時重置篩選
-  showUserInterface();
-  renderProfile();
-  switchTab(0);
-}
-
 // =================== BANNER ===================
 const BANNER_LABELS = ['🔥 Hot', '🎨 New', '🎵 Limited'];
 const BANNER_GRADIENTS = [
@@ -772,19 +800,6 @@ function renderAdminNav() {
 
   const hb = document.getElementById('adminHeaderBadge');
   if (hb && currentUser) hb.textContent = `👤 ${currentUser.name}`;
-}
-
-function adminLogout() {
-  currentUser = null;
-  currentRole = null;
-  const nav = document.getElementById('adminNav');
-  const badge = nav.querySelector('.admin-badge-nav');
-  if (badge) badge.remove();
-  const bottom = nav.querySelector('.nav-bottom');
-  if (bottom) bottom.remove();
-  resetFilter(); // 管理員登出時重置篩選
-  showUserInterface();
-  switchTab(0);
 }
 
 // =================== ADMIN: DASHBOARD ===================
@@ -1229,4 +1244,28 @@ if (searchBtn) searchBtn.addEventListener('click', doFilter);
 
 // =================== INIT ===================
 loadEvents();
-showUserInterface();
+// 還原登入狀態，不用亦刷新就重新登入
+async function init() {
+  const savedUser = localStorage.getItem('currentUser');
+  const savedRole = localStorage.getItem('currentRole');
+
+  if (savedUser && savedRole) {
+    currentUser = JSON.parse(savedUser);
+    currentRole = savedRole;
+    if (currentRole === 'admin') {
+      showAdminInterface();
+      await loadEvents();
+    } else {
+      showUserInterface();
+      renderProfile();
+      // 先載入已報名清單，再載入活動，renderCards 才能標記已報名的狀態
+      await loadMyActivities();
+      await loadEvents();
+    }
+  } else {
+    showUserInterface();
+    await loadEvents();
+  }
+}
+
+init();
