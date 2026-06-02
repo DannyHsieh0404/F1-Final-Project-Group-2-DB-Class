@@ -12,12 +12,14 @@ const REGISTRATIONS = {
   ],
 };
 
+
 const TAGCOLOR = {
   'Sports':'green','Competition':'green','Arts':'purple','Handicraft':'orange',
   'Music':'purple','Eco':'blue','Life':'blue','IT':'blue',
   'Exhibition':'purple','Lecture':'orange','Culture':'green','Exchange':'green',
   'Health':'green','Entertainment':'purple'
 };
+
 
 const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
 
