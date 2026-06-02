@@ -653,7 +653,7 @@ body {
   background: linear-gradient(135deg, var(--primary-pale), #F5FBF9);
   color: var(--primary-dark);
   font-weight: 800;
-  box-shadow: inset 3px 0 0 var(--primary);
+  box-shadow: inset 2.5px 0 0 var(--primary);
 }
 
 .screens-wrap { background: var(--bg); }
@@ -768,7 +768,7 @@ body {
     border-radius: 18px 18px 0 0;
   }
   .nav-item.active {
-    box-shadow: inset 0 3px 0 var(--primary);
+    box-shadow: inset 0 2px 0 var(--primary);
     background: #F5FBF9;
   }
 
