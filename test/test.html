@@ -1,23 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-US">
-<html lang="en-US">
 <head>
-  <meta charset="utf-8" />
-  <title>College of Management, NSYSU — Event Platform</title>
-  <link href="test.css" type="text/css" rel="stylesheet"/>
-  <script src="test.js" type="text/javascript" defer></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-  <meta charset="utf-8" />
-  <title>College of Management, NSYSU — Event Platform</title>
-  <link href="test.css" type="text/css" rel="stylesheet"/>
-  <script src="test.js" type="text/javascript" defer></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
   <meta charset="utf-8" />
   <title>Event Hub-Event Registration Platform</title>
   <link href="test.css" type="text/css" rel="stylesheet"/>
@@ -40,10 +23,6 @@
       <h1>Explore Events</h1>
       <p>Find the perfect experience for you</p>
     </div>
-    <div class="page-header">
-      <h1>Explore Events</h1>
-      <p>Find the perfect experience for you</p>
-    </div>
         
         <div class="banner-wrap">
           <div class="banner-scroll" id="bannerScroll"></div>
@@ -52,26 +31,12 @@
         
         <div class="search-filter-bar">
           
-          <div style="display: flex; flex: 2; min-width: 250px; gap: 4px;">
-            <input type="text" id="searchKeyword" placeholder="🔍 Search event name, location or description..." style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px 0 0 10px; font-size: 14px; margin-right: -4px;">
-            <button id="searchBtn" style="padding: 10px 16px; background: var(--primary, #4f46e5); color: white; border: none; border-radius: 0 10px 10px 0; font-size: 14px; cursor: pointer; font-weight: 500;">Search</button>
-            <input type="text" id="searchKeyword" placeholder="🔍 Search event name, location or description..." style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px 0 0 10px; font-size: 14px; margin-right: -4px;">
-            <button id="searchBtn" style="padding: 10px 16px; background: var(--primary, #4f46e5); color: white; border: none; border-radius: 0 10px 10px 0; font-size: 14px; cursor: pointer; font-weight: 500;">Search</button>
+          <div class="search-input-wrap">
+            <input type="text" id="searchKeyword" placeholder="🔍 Search event name, location or description..."><!--查詢 -->
+            <button id="searchBtn">Search</button>
           </div>
 
-          <select id="filterTag" style="flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white;">
-            <option value="all">All Tags</option>
-            <option value="🏀">🏀 Competetion</option>
-            <option value="🎨">🎨 Arts</option>
-            <option value="🎵">🎵 Music</option>
-            <option value="🌿">🌿 Eco / Environment</option>
-            <option value="💻">💻 IT / Info</option>
-            <option value="📸">📸 Photography</option>
-            <option value="🧠">🧠 Lectures</option>
-            <option value="🌏">🌏 Culture</option>
-            <option value="🏃">🏃 Sports & Exercise</option>
-            <option value="🎮">🎮 Gaming / Esports</option>
-            <option value="🍳">🍳 Lifestyle</option>
+          <select id="filterTag"><!--篩選類別 -->
             <option value="all">All Tags</option>
             <option value="🏀">🏀 Competetion</option>
             <option value="🎨">🎨 Arts</option>
@@ -88,15 +53,12 @@
         </div>
 
         <div class="section-title">All Events</div>
-        <div class="section-title">All Events</div>
         <div class="activity-list"></div>
       </div>
 
       <!-- 我的活動區MY ACTIVITIES -->
       <div class="screen" id="screen-mine">
         <div class="page-header">
-          <h1>My Events</h1>
-          <p>List of registered events</p>
           <h1>My Events</h1>
           <p>List of registered events</p>
         </div>
@@ -119,17 +81,14 @@
           <div class="sheet-hero" id="dHero"></div>
           <div class="sheet-body">
             <div class="sheet-tags" id="dTags"></div>
-            <div class="sheet-info-row"><i class="ti ti-calendar"></i><span id="dDate"></span></div>
-            <div class="sheet-info-row"><i class="ti ti-map-pin"></i><span id="dLocation"></span></div>
-            <div class="sheet-desc" id="dDesc"></div>
-            <div class="quota-card">
-              <div> <div class="quota-num" id="dQuota"></div> <div class="quota-label">Registered</div> </div>
-              <div style="text-align:right"><div class="quota-num" id="dMax"></div> <div class="quota-label">Total Capacity</div></div>
+            <div class="sheet-info-row"><i class="ti ti-calendar"></i><span id="dDate"></span></div><!--時間日期 -->
+            <div class="sheet-info-row"><i class="ti ti-map-pin"></i><span id="dLocation"></span></div><!--地點 -->
+            <div class="sheet-desc" id="dDesc"></div><!--活動詳細敘述 -->
+            <div class="quota-card"><!--報名人數 額度-->
               <div> <div class="quota-num" id="dQuota"></div> <div class="quota-label">Registered</div> </div>
               <div class="quota-right"><div class="quota-num" id="dMax"></div> <div class="quota-label">Total Capacity</div></div>
             </div>
-            <button class="register-btn" onclick="handleRegister()" id="regBtn">Register Now</button>
-            <button class="register-btn" onclick="handleRegister()" id="regBtn">Register Now</button>
+            <button class="register-btn" onclick="handleRegister()" id="regBtn">Register Now</button><!--報名按鈕-->
           </div>
         </div>
       </div>
@@ -137,16 +96,11 @@
 
     <!-- BOTTOM / SIDE NAV 側邊攔-->
     <nav class="nav" id="mainNav">
-      <div class="nav-logo" id="navLogo" style="display:none">
-        <h2>NSYSU</h2>
-        <p>Event Registration Platform</p>
+      <div class="nav-logo" id="navLogo">
         <h2>NSYSU</h2>
         <p>Event Registration Platform</p>
       </div>
-      <div class="nav-item active" onclick="switchTab(0)" id="nav0"><i class="ti ti-compass"></i>Explore</div>
-      <div class="nav-item" onclick="switchTab(1)" id="nav1"><i class="ti ti-calendar-event"></i>My Events</div>
-      <div class="nav-item" onclick="switchTab(2)" id="nav2"><i class="ti ti-user-circle"></i>Profile</div>
-      <div class="nav-item active" onclick="switchTab(0)" id="nav0"><i class="ti ti-compass"></i>Explore</div>
+      <div class="nav-item active" onclick="switchTab(0)" id="nav0"><i class="ti ti-compass"></i>Explore</div><!--輪播活動3個 -->
       <div class="nav-item" onclick="switchTab(1)" id="nav1"><i class="ti ti-calendar-event"></i>My Events</div>
       <div class="nav-item" onclick="switchTab(2)" id="nav2"><i class="ti ti-user-circle"></i>Profile</div>
     </nav>
@@ -180,8 +134,6 @@
         <div class="page-header">
           <h1>Registration Management</h1>
           <p>View registration details for each event</p>
-          <h1>Registration Management</h1>
-          <p>View registration details for each event</p>
         </div>
         <div id="admin-reg-content"></div>
       </div>
@@ -195,15 +147,10 @@
 
     <!-- 管理員介面的側邊攔 -->
     <nav class="nav" id="adminNav">
-      <div class="nav-logo" id="adminNavLogo" style="display:none">
-        <h2>NSYSU</h2>
-        <p>Admin Dashboard</p>
+      <div class="nav-logo" id="adminNavLogo">
         <h2>NSYSU</h2>
         <p>Admin Dashboard</p>
       </div>
-      <div class="nav-item active" onclick="switchAdminTab(0)" id="anav0"><i class="ti ti-layout-dashboard"></i>Overview</div>
-      <div class="nav-item" onclick="switchAdminTab(1)" id="anav1"><i class="ti ti-users"></i>Registration Management</div>
-      <div class="nav-item" onclick="switchAdminTab(2)" id="anav2"><i class="ti ti-user-circle"></i>Admin Profile</div>
       <div class="nav-item active" onclick="switchAdminTab(0)" id="anav0"><i class="ti ti-layout-dashboard"></i>Overview</div>
       <div class="nav-item" onclick="switchAdminTab(1)" id="anav1"><i class="ti ti-users"></i>Registration Management</div>
       <div class="nav-item" onclick="switchAdminTab(2)" id="anav2"><i class="ti ti-user-circle"></i>Admin Profile</div>
@@ -211,12 +158,9 @@
 
   </div><!-- end adminApp -->
 
-  <!-- ===== AUTH MODAL (shared) ===== -->
-  </div><div class="modal-wrap" id="authModal">
-  </div><div class="modal-wrap" id="authModal">
+  <!-- =====註冊&登入 ===== -->
+  </div><div class="modal-wrap" id="authModal" onclick="closeAuthOnBg(event)">
     <div class="modal">
-      <h2>Welcome to the Event Platform</h2>
-      <p>Please select your role to sign in or sign up</p>
       <h2>Welcome to the Event Platform</h2>
       <p>Please select your role to sign in or sign up</p>
 
@@ -224,20 +168,14 @@
         <div class="role-btn active" id="roleUser" onclick="selectRole('user')">
           <i class="ti ti-user"></i>
           <span>General User</span>
-          <span>General User</span>
         </div>
         <div class="role-btn" id="roleAdmin" onclick="selectRole('admin')">
           <i class="ti ti-shield-check"></i>
           <span>Admin</span>
-          <span>Admin</span>
         </div>
       </div>
 
-      <!-- LOGIN FORM -->
-      <!-- LOGIN FORM -->
       <div class="modal-tabs">
-        <div class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</div>
-        <div class="modal-tab" id="tabReg" onclick="switchAuthTab('reg')">Sign Up</div>
         <div class="modal-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</div>
         <div class="modal-tab" id="tabReg" onclick="switchAuthTab('reg')">Sign Up</div>
       </div>
@@ -246,29 +184,18 @@
         <input type="text" placeholder="Student ID / Account " id="loginId">
         <input type="password" placeholder="Password" id="loginPw">
         <button class="modal-submit" onclick="doLogin()">Sign In</button>
-        <input type="text" placeholder="Student ID / Account " id="loginId">
-        <input type="password" placeholder="Password" id="loginPw">
-        <button class="modal-submit" onclick="doLogin()">Sign In</button>
       </div>
 
-      <div class="modal-form" id="regForm" style="display:none">
+      <div class="modal-form" id="regForm">
         <input type="text" placeholder="Student ID / Account" id="rId">
         <input type="text" placeholder="Full Name" id="rName">
         <input type="text" placeholder="Phone Number" id="rPhone">
         <input type="email" placeholder="Email Address" id="rEmail">
         <input type="text" placeholder="Department / Organizaiton" id="rDept">
         <input type="password" placeholder="Password" id="rPw">
-        <input type="text" placeholder="Student ID / Account" id="rId">
-        <input type="text" placeholder="Full Name" id="rName">
-        <input type="text" placeholder="Phone Number" id="rPhone">
-        <input type="email" placeholder="Email Address" id="rEmail">
-        <input type="text" placeholder="Department / Organizaiton" id="rDept">
-        <input type="password" placeholder="Password" id="rPw">
-        <div id="adminCodeWrap" style="display:none">
-          <input type="password" placeholder="Admin Verification Code" id="rAdminCode">
+        <div id="adminCodeWrap">
           <input type="password" placeholder="Admin Verification Code" id="rAdminCode">
         </div>
-        <button class="modal-submit" onclick="doRegister()">Sign Up</button>
         <button class="modal-submit" onclick="doRegister()">Sign Up</button>
       </div>
 
@@ -293,17 +220,11 @@
     <div class="modal">
       <h2>Select Meal Preference</h2>
       <p>Please choose your meal preference</p>
-      <h2>Select Meal Preference</h2>
-      <p>Please choose your meal preference</p>
       <div class="meal-opt">
         <button class="meal-btn" id="meatBtn" onclick="selectMeal('meat')"><i class="ti ti-meat"></i>Non-Vegetarian</button>
         <button class="meal-btn" id="vegBtn" onclick="selectMeal('veg')"><i class="ti ti-leaf"></i>Vegetarian</button>
-        <button class="meal-btn" id="meatBtn" onclick="selectMeal('meat')"><i class="ti ti-meat"></i>Non-Vegetarian</button>
-        <button class="meal-btn" id="vegBtn" onclick="selectMeal('veg')"><i class="ti ti-leaf"></i>Vegetarian</button>
       </div>
-      <button class="modal-submit" onclick="submitReg()" id="submitMealBtn" style="opacity:0.5;pointer-events:none">Confirm Registration</button>
-      <button class="modal-cancel" onclick="closeMeal()">Cancel</button>
-      <button class="modal-submit" onclick="submitReg()" id="submitMealBtn" style="opacity:0.5;pointer-events:none">Confirm Registration</button>
+      <button class="modal-submit" onclick="submitReg()" id="submitMealBtn">Confirm Registration</button>
       <button class="modal-cancel" onclick="closeMeal()">Cancel</button>
     </div>
   </div>
@@ -313,11 +234,9 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle success"><i class="ti ti-check"></i></div>
-        <h2 style="font-size:17px;font-weight:800">Registration Successful!</h2>
-        <h2 style="font-size:17px;font-weight:800">Registration Successful!</h2>
-        <p id="successMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+        <h2 class="modal-title">Registration Successful!</h2>
+        <p id="successMsg" class="modal-desc"></p>
       </div>
-      <button class="modal-submit" onclick="goToMine()">View My Events</button>
       <button class="modal-submit" onclick="goToMine()">View My Events</button>
     </div>
   </div>
@@ -327,13 +246,10 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle cancel"><i class="ti ti-alert-triangle"></i></div>
-        <h2 style="font-size:17px;font-weight:800">Confirm Cancellation?</h2>
-        <h2 style="font-size:17px;font-weight:800">Confirm Cancellation?</h2>
-        <p id="cancelMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+        <h2 class="modal-title">Confirm Cancellation?</h2>
+        <p id="cancelMsg" class="modal-desc"></p>
       </div>
-      <button class="modal-submit" style="background:#EF4444" onclick="confirmCancel()">Confirm Cancel</button>
-      <button class="modal-cancel" onclick="closeCancelModal()">Back</button>
-      <button class="modal-submit" style="background:#EF4444" onclick="confirmCancel()">Confirm Cancel</button>
+      <button class="modal-submit danger" onclick="confirmCancel()">Confirm Cancel</button>
       <button class="modal-cancel" onclick="closeCancelModal()">Back</button>
     </div>
   </div>
@@ -343,20 +259,16 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle cancel"><i class="ti ti-x"></i></div>
-        <h2 style="font-size:17px;font-weight:800">Registration Cancelled</h2>
-        <h2 style="font-size:17px;font-weight:800">Registration Cancelled</h2>
-        <p id="cancelSuccessMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+        <h2 class="modal-title">Registration Cancelled</h2>
+        <p id="cancelSuccessMsg" class="modal-desc"></p>
       </div>
-      <button class="modal-submit" onclick="closeCancelSuccess()">OK</button>
       <button class="modal-submit" onclick="closeCancelSuccess()">OK</button>
     </div>
   </div>
 
   <!-- 新增&編輯活動 -->
   <div class="modal-wrap" id="activityFormModal">
-    <div class="modal" style="width:480px;max-width:95vw">
-      <h2 id="actFormTitle">Add Event</h2>
-      <p id="actFormSubtitle">Fill out event information</p>
+    <div class="modal modal-activity-form">
       <h2 id="actFormTitle">Add Event</h2>
       <p id="actFormSubtitle">Fill out event information</p>
       <div class="modal-form modal-form--activity">
@@ -372,15 +284,12 @@
           </label>
         </div>
         <input type="text" placeholder="Location" id="af_loc">
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="Automatically calculated">
-          <input type="number" placeholder="Total Quota" id="af_max" min="1" style="flex:1">
-          <input type="number" id="af_quota" min="0" style="flex:1;opacity:0.5;cursor:not-allowed" disabled title="Automatically calculated">
-          <input type="number" placeholder="Total Quota" id="af_max" min="1" style="flex:1">
+        <div class="quota-input-row">
+          <input type="number" id="af_quota" min="0" disabled title="Automatically calculated">
+          <input type="number" placeholder="Total Quota" id="af_max" min="1">
         </div>
-        <div style="display:flex;gap:8px">
-          <select id="af_emoji" style="flex:1;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:16px;background:var(--bg);color:var(--text);font-family:inherit">
-            <option value="📅">📅 Default (Calendar)</option>
+        <div class="emoji-color-row">
+          <select id="af_emoji">
             <option value="🏀">🏀 Competetion</option>
             <option value="🎨">🎨 Arts</option>
             <option value="🎵">🎵 Music</option>
@@ -393,23 +302,15 @@
             <option value="🎮">🎮 Gaming / Esports</option>
             <option value="🍳">🍳 Lifestyle</option>
           </select>
-          <select id="af_color" style="flex:1;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit">
-            <option value="green">Green</option>
-            <option value="orange">Orange</option>
-            <option value="purple">Purple</option>
-            <option value="blue">Blue</option>
+          <select id="af_color">
             <option value="green">Green</option>
             <option value="orange">Orange</option>
             <option value="purple">Purple</option>
             <option value="blue">Blue</option>
           </select>
         </div>
-        <input type="text" placeholder="Tags（Divided by “,” eg: sports, competetion）" id="af_tags">
-        <textarea id="af_desc" placeholder="Description" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;line-height:1.6"></textarea>
-        <button class="modal-submit" onclick="submitActivityForm()">Save</button>
-        <button class="modal-cancel" onclick="closeActivityForm()">Cancel</button>
-        <input type="text" placeholder="Tags（Divided by “,” eg: sports, competetion）" id="af_tags">
-        <textarea id="af_desc" placeholder="Description" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);font-family:inherit;resize:vertical;min-height:80px;line-height:1.6"></textarea>
+        <input type="text" placeholder='Tags（Divided by "," eg: sports, competetion）' id="af_tags">
+        <textarea id="af_desc" placeholder="Description"></textarea>
         <button class="modal-submit" onclick="submitActivityForm()">Save</button>
         <button class="modal-cancel" onclick="closeActivityForm()">Cancel</button>
       </div>
@@ -421,13 +322,10 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle cancel"><i class="ti ti-trash"></i></div>
-        <h2 style="font-size:17px;font-weight:800">Confirm Event Deletion?</h2>
-        <h2 style="font-size:17px;font-weight:800">Confirm Event Deletion?</h2>
-        <p id="adminDeleteMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+        <h2 class="modal-title">Confirm Event Deletion?</h2>
+        <p id="adminDeleteMsg" class="modal-desc"></p>
       </div>
-      <button class="modal-submit" style="background:#EF4444" onclick="confirmDeleteActivity()">Confirm Delete</button>
-      <button class="modal-cancel" onclick="closeDeleteModal()">Back</button>
-      <button class="modal-submit" style="background:#EF4444" onclick="confirmDeleteActivity()">Confirm Delete</button>
+      <button class="modal-submit danger" onclick="confirmDeleteActivity()">Confirm Delete</button>
       <button class="modal-cancel" onclick="closeDeleteModal()">Back</button>
     </div>
   </div>
@@ -438,8 +336,7 @@
       <h2 id="adminRegDetailTitle"></h2>
       <p id="adminRegDetailSub"></p>
       <div id="adminRegDetailBody"></div>
-      <button class="modal-submit" style="margin-top:8px" onclick="closeRegDetail()">Close</button>
-      <button class="modal-submit" style="margin-top:8px" onclick="closeRegDetail()">Close</button>
+      <button class="modal-submit modal-submit--mt" onclick="closeRegDetail()">Close</button>
     </div>
   </div>
 
@@ -448,11 +345,9 @@
     <div class="modal">
       <div class="modal-icon-wrap">
         <div class="modal-circle success"><i class="ti ti-check"></i></div>
-        <h2 style="font-size:17px;font-weight:800" id="adminSuccessTitle">Action successful</h2>
-        <h2 style="font-size:17px;font-weight:800" id="adminSuccessTitle">Action successful</h2>
-        <p id="adminSuccessMsg" style="font-size:13px;color:var(--text-muted);line-height:1.6"></p>
+        <h2 class="modal-title" id="adminSuccessTitle">Action successful</h2>
+        <p id="adminSuccessMsg" class="modal-desc"></p>
       </div>
-      <button class="modal-submit" onclick="closeAdminSuccess()">OK</button>
       <button class="modal-submit" onclick="closeAdminSuccess()">OK</button>
     </div>
   </div>

@@ -1,3 +1,4 @@
+// =================== DATA ===================
 const API_BASE = 'http://127.0.0.1:5000/api';
 
 let ACTS = [];
@@ -11,14 +12,12 @@ const REGISTRATIONS = {
   ],
 };
 
-
 const TAGCOLOR = {
   'Sports':'green','Competition':'green','Arts':'purple','Handicraft':'orange',
   'Music':'purple','Eco':'blue','Life':'blue','IT':'blue',
   'Exhibition':'purple','Lecture':'orange','Culture':'green','Exchange':'green',
   'Health':'green','Entertainment':'purple'
 };
-
 
 const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
 
