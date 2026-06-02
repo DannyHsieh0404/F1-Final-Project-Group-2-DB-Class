@@ -246,7 +246,6 @@ function openDetail(id) {
     btn.textContent = '✕ Cancel Registration';
     btn.className = 'register-btn cancel';
     btn.disabled = false;
-    if (mealUpdateBtn) mealUpdateBtn.style.display = 'block';
   } else if (a.quota >= a.max) {
     btn.textContent = 'Fully Booked';
     btn.className = 'register-btn';
@@ -255,7 +254,6 @@ function openDetail(id) {
     btn.textContent = 'Fully Booked';
     btn.className = 'register-btn';
     btn.disabled = true;
-    if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   } else {
     btn.textContent = 'Register Now';
     btn.className = 'register-btn';
@@ -266,6 +264,7 @@ function openDetail(id) {
     btn.disabled = false;
     if (mealUpdateBtn) mealUpdateBtn.style.display = 'none';
   }
+
   document.getElementById('detailOverlay').classList.add('open');
 }
 function closeDetail(e) {
@@ -650,6 +649,7 @@ async function doLogin() {
   }
 }
 
+//登入登出區
 async function doRegister() {
   const user_id = document.getElementById('rId').value.trim();  // 學號
   const user_id = document.getElementById('rId').value.trim();  // 學號
@@ -692,6 +692,9 @@ async function doRegister() {
     currentUser = { id: user_id, id_db: user_id, name, phone, email, dept };
     currentRole = selectedAuthRole;
 
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    localStorage.setItem('currentRole', currentRole);
+
     if (currentRole === 'admin') {
       const code = document.getElementById('rAdminCode') ? document.getElementById('rAdminCode').value.trim() : 'nsysu2025';
       if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('Incorrect administrator verification code (Hint: nsysu2025)');
@@ -702,8 +705,17 @@ async function doRegister() {
       closeAuth();
       showUserInterface();
       renderProfile();
-      if (pendingAfterAuth) { pendingAfterAuth = false; handleRegister(); }
+      await loadMyActivities();
+      if (pendingAfterAuth) {
+        pendingAfterAuth = false;
+        const already = myActivities.find(m => m.id === currentDetailId);
+        if (already) {
+          openCancelModal(currentDetailId);
+      } else {
+        handleRegister();
+      }
     }
+  }
   } catch(e) {
     console.error(e);
     alert('An error occurred');
@@ -711,8 +723,44 @@ async function doRegister() {
   }
 }
 
-function closeAuth() { document.getElementById('authModal').classList.remove('open'); }
+function logout() {
+  document.getElementById('logoutConfirmModal').classList.add('open');
+}
 
+function adminLogout() {
+  document.getElementById('logoutConfirmModal').classList.add('open');
+}
+
+function confirmLogout() {
+  document.getElementById('logoutConfirmModal').classList.remove('open');
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('currentRole');
+  currentUser = null;
+  currentRole = null;
+  profileEditing = false;
+  myActivities = [];
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+  // admin nav 清理
+  const nav = document.getElementById('adminNav');
+  const badge = nav.querySelector('.admin-badge-nav');
+  if (badge) badge.remove();
+  const bottom = nav.querySelector('.nav-bottom');
+  if (bottom) bottom.remove();
+  resetFilter();
+  showUserInterface();
+  renderProfile();
+  switchTab(0);
+}
+
+function closeAuth() { 
+  document.getElementById('authModal').classList.remove('open');
+  pendingAfterAuth = false; // 取消待執行的報名
+}
+
+function closeAuthOnBg(e) {
+  if (e.target === document.getElementById('authModal')) closeAuth();
+}
 // =================== MY ACTIVITIES ===================
 function renderMine() {
   const el = document.getElementById('mine-content');
