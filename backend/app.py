@@ -6,27 +6,22 @@ from db_config import get_db_connection
 import sqlite3
 
 # Set the folder path for frontend static files (located in the 'test' folder under the project root)
-# Set the folder path for frontend static files (located in the 'test' folder under the project root)
 FRONTEND_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test')
 app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path='')
 
 # Enable CORS to allow the frontend web pages to smoothly call the API
-# Enable CORS to allow the frontend web pages to smoothly call the API
 CORS(app)
 
-# === Serve Frontend Web Page Routing ===
 # === Serve Frontend Web Page Routing ===
 @app.route('/')
 def serve_index():
     return send_from_directory(app.static_folder, 'test.html')
 
 # === Serve Other Static Files (css, js) Required by the Web Page ===
-# === Serve Other Static Files (css, js) Required by the Web Page ===
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory(app.static_folder, path)
 
-# 1. Get all events list
 # 1. Get all events list
 @app.route('/api/events', methods=['GET'])
 def get_events():
@@ -37,7 +32,6 @@ def get_events():
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        # Query the Event table and retrieve the Category name
         # Query the Event table and retrieve the Category name
         query = """
             SELECT
@@ -58,14 +52,11 @@ def get_events():
         """
         cursor.execute(query)
         # Convert data into dictionary format
-        # Convert data into dictionary format
         events = [dict(row) for row in cursor.fetchall()]
 
         # Convert date format
-        # Convert date format
         for event in events:
             if event['date']:
-                # SQLite returns data as string, can be handled directly (if format is YYYY-MM-DD, convert to YYYY/MM/DD)
                 # SQLite returns data as string, can be handled directly (if format is YYYY-MM-DD, convert to YYYY/MM/DD)
                 event['date'] = str(event['date']).replace('-', '/')
 
@@ -75,7 +66,6 @@ def get_events():
     finally:
         conn.close()
 
-# 2. Event Registration (with optional dietary requirements)
 # 2. Event Registration (with optional dietary requirements)
 @app.route('/api/register', methods=['POST'])
 def register_event():
@@ -92,23 +82,18 @@ def register_event():
         cursor = conn.cursor()
 
         # 1. First, check if the user has registered before
-        # 1. First, check if the user has registered before
         cursor.execute("SELECT registration_id, status FROM Registration WHERE event_id = ? AND user_id = ?", (event_id, user_id))
         existing_reg = cursor.fetchone()
 
         if existing_reg:
             registration_id, current_status = existing_reg
             # 1-1. If already in 'Registered' status
-            # 1-1. If already in 'Registered' status
             if current_status == 'Registered':
                 return jsonify({"error": "You have registered this Activity!"}), 400
-                return jsonify({"error": "You have registered this Activity!"}), 400
 
-            # 1-2. If in 'Cancelled' status, restore it to 'Registered' and update the timestamp (using localtime to fix Taiwan timezone)
             # 1-2. If in 'Cancelled' status, restore it to 'Registered' and update the timestamp (using localtime to fix Taiwan timezone)
             cursor.execute("UPDATE Registration SET status = 'Registered', registration_date = datetime('now', 'localtime') WHERE registration_id = ?", (registration_id,))
 
-            # Clear old dietary requirements
             # Clear old dietary requirements
             cursor.execute("DELETE FROM Dietary_Req WHERE registration_id = ?", (registration_id,))
 
@@ -132,16 +117,13 @@ def register_event():
             """
             cursor.execute(query_reg, (event_id, user_id))
             registration_id = cursor.lastrowid # Get the newly generated PK
-            registration_id = cursor.lastrowid # Get the newly generated PK
 
-        # If dietary requirements are provided, write them into the database uniformly
         # If dietary requirements are provided, write them into the database uniformly
         if dietary_req:
             query_diet = "INSERT INTO Dietary_Req (registration_id, dietary_req) VALUES (?, ?)"
             cursor.execute(query_diet, (registration_id, dietary_req))
 
         conn.commit()
-        return jsonify({"success": True, "message": "Registration successful!", "registration_id": registration_id})
         return jsonify({"success": True, "message": "Registration successful!", "registration_id": registration_id})
 
     except Exception as e:
@@ -150,7 +132,6 @@ def register_event():
     finally:
         conn.close()
 
-# 3. Get "My Activities" (Registration records for a specific user)
 # 3. Get "My Activities" (Registration records for a specific user)
 @app.route('/api/my-activities/<user_id>', methods=['GET'])
 def get_my_activities(user_id):
@@ -163,9 +144,6 @@ def get_my_activities(user_id):
                 r.registration_id,
                 e.event_id as id,
                 e.title,
-                e.description,
-                e.emoji, 
-                e.color, 
                 e.description,
                 e.emoji, 
                 e.color, 
@@ -191,7 +169,6 @@ def get_my_activities(user_id):
         conn.close()
 
 # 4. Cancel Registration
-# 4. Cancel Registration
 @app.route('/api/cancel', methods=['POST'])
 def cancel_event():
     data = request.json
@@ -215,11 +192,9 @@ def cancel_event():
         conn.close()
 
 # 5. Update User Profile
-# 5. Update User Profile
 @app.route('/api/user', methods=['PUT'])
 def update_user_profile():
     data = request.json
-    # Support 'id' or 'id_db' sent from frontend as user_id
     # Support 'id' or 'id_db' sent from frontend as user_id
     user_id = data.get('id_db') or data.get('id')
 
@@ -229,7 +204,6 @@ def update_user_profile():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        # [Fix] Removed the unsafe 'OR email = ?' to precisely update using only the unique user_id (Primary Key)
         # [Fix] Removed the unsafe 'OR email = ?' to precisely update using only the unique user_id (Primary Key)
         query = """
             UPDATE User 
@@ -251,21 +225,15 @@ def update_user_profile():
         conn.close()
 
 # 6. User Login —— Fixed admin privilege unverified vulnerability
-# 6. User Login —— Fixed admin privilege unverified vulnerability
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     account = data.get('id')      # Email passed from frontend
     password = data.get('pw')     # Password passed from frontend
     login_role = data.get('role') # [New] Receive the login role selected by the frontend (e.g., 'admin' or 'student')
-    account = data.get('id')      # Email passed from frontend
-    password = data.get('pw')     # Password passed from frontend
-    login_role = data.get('role') # [New] Receive the login role selected by the frontend (e.g., 'admin' or 'student')
 
     # Security check: Ensure required parameters are provided
-    # Security check: Ensure required parameters are provided
     if not account or not password or not login_role:
-        return jsonify({"error": "Missing account, password, or role information"}), 400
         return jsonify({"error": "Missing account, password, or role information"}), 400
 
     conn = get_db_connection()
@@ -273,15 +241,12 @@ def login():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM User WHERE user_id = ?", (account,))
-        cursor.execute("SELECT * FROM User WHERE user_id = ?", (account,))
         user = cursor.fetchone()
 
         if user:
             # 1. Verify if the password hash is correct
-            # 1. Verify if the password hash is correct
             if check_password_hash(user['password'], password):
                 user_dict = dict(user)
-                db_role = user_dict['role'] # The actual role label in the database: 'Organizer' or 'Student'
                 db_role = user_dict['role'] # The actual role label in the database: 'Organizer' or 'Student'
 
                 # 2. [Core Fix] Align the frontend role with the database role definition
@@ -297,7 +262,6 @@ def login():
                 return jsonify({
                     "success": True, 
                     "user": {
-                        "id": user_dict['user_id'],      
                         "id": user_dict['user_id'],      
                         "id_db": user_dict['user_id'], 
                         "name": user_dict['name'],
@@ -320,17 +284,8 @@ def register_user():
     data = request.json
     user_id  = data.get('user_id')
     account = data.get('id')  
-    user_id  = data.get('user_id')
-    account = data.get('id')  
     password = data.get('pw')
 
-    if not user_id:
-        user_id = account
-
-    if not user_id or not password:
-        return jsonify({"error": "請填寫學號與密碼"}), 400
-    
-    # Secure password hash is successfully generated here
     if not user_id:
         user_id = account
 
@@ -345,21 +300,13 @@ def register_user():
     dept  = data.get('dept', '未設定')
     phone = data.get('phone', '')
     email = data.get('email', '')
-    role  = data.get('role')
-    name  = data.get('name', '新使用者')
-    dept  = data.get('dept', '未設定')
-    phone = data.get('phone', '')
-    email = data.get('email', '')
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         # Check if already exists
         cursor.execute("SELECT user_id FROM User WHERE user_id  = ?", (user_id,))
-        # Check if already exists
-        cursor.execute("SELECT user_id FROM User WHERE user_id  = ?", (user_id,))
         if cursor.fetchone():
-            return jsonify({"error": "This Email has been registered"}), 400
             return jsonify({"error": "This Email has been registered"}), 400
 
         real_role = 'Organizer' if role == 'admin' else 'Student'
@@ -368,26 +315,15 @@ def register_user():
         dept = data.get('dept', '未設定')
         phone = data.get('phone', '')
 
-        name = data.get('name', '新使用者')
-        dept = data.get('dept', '未設定')
-        phone = data.get('phone', '')
-
         query = """
-            INSERT INTO User (user_id, email, password, role, name, department, phone)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
             INSERT INTO User (user_id, email, password, role, name, department, phone)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         cursor.execute(query, (user_id, email, hashed_password, real_role, name, dept, phone))
-        cursor.execute(query, (user_id, email, hashed_password, real_role, name, dept, phone))
         conn.commit()
-        return jsonify({"success": True, "user_id": user_id})
         return jsonify({"success": True, "user_id": user_id})
     except Exception as e:
         conn.rollback()
-        print("ERROR:", e) 
-        import traceback
-        traceback.print_exc()
         print("ERROR:", e) 
         import traceback
         traceback.print_exc()
@@ -397,11 +333,8 @@ def register_user():
 
 
 # 8. Get registration list for a specific event (For Admin use)
-
-# 8. Get registration list for a specific event (For Admin use)
 @app.route('/api/registrations', methods=['GET'])
 def get_all_registrations():
-    # Changed to fetch all registration records and group them by event_id
     # Changed to fetch all registration records and group them by event_id
     conn = get_db_connection()
     try:
@@ -423,7 +356,6 @@ def get_all_registrations():
         rows = [dict(row) for row in cursor.fetchall()]
 
         # Organize into a dictionary with event_id as the key
-        # Organize into a dictionary with event_id as the key
         regs_dict = {}
         for row in rows:
             eid = row.pop('event_id')
@@ -441,17 +373,11 @@ def get_all_registrations():
 # New Features: Admin Backend "Add, Edit, Delete Event" APIs
 # =======================================================
 
-# =======================================================
-# New Features: Admin Backend "Add, Edit, Delete Event" APIs
-# =======================================================
-
-# 9. Create Event (POST /api/events)
 # 9. Create Event (POST /api/events)
 @app.route('/api/events', methods=['POST'])
 def create_event():
     data = request.json
     if not data:
-        return jsonify({"error": "Missing event data"}), 400
         return jsonify({"error": "Missing event data"}), 400
 
     title = data.get('title')
@@ -482,7 +408,6 @@ def create_event():
         cursor.execute(query, (category_id, title, description, emoji, color, host_id, event_day, event_time, location, guest_capacity, student_capacity))
         conn.commit()
         return jsonify({"success": True, "message": "Event created successfully!", "event_id": cursor.lastrowid})
-        return jsonify({"success": True, "message": "Event created successfully!", "event_id": cursor.lastrowid})
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
@@ -496,37 +421,17 @@ def update_event(event_id):
     data = request.json
     if not data:
         return jsonify({"error": "Missing modification data"}), 400
-        return jsonify({"error": "Missing modification data"}), 400
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         
-        # 1. 先檢查該活動是否存在，並順便取出原本的資料
-        cursor.execute("SELECT emoji, color FROM Event WHERE event_id = ?", (event_id,))
-        existing_event = cursor.fetchone()
-        if not existing_event:
+        # Check if the event exists first
+        cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
+        if not cursor.fetchone():
             return jsonify({"error": "Event not found, modification failed"}), 404
-            
-        old_emoji = existing_event[0]
-        old_color = existing_event[1]
 
-        # 2. 嚴格防空機制：如果前端傳來的是空字串、None 或根本沒傳，就保留原本資料庫裡的 emoji
-        # 支援前端可能傳過來的各種 key (例如 'emoji' 或 'emoj')
-        input_emoji = data.get('emoji') or data.get('emoj') 
-        if not input_emoji or str(input_emoji).strip() == "":
-            emoji_to_save = old_emoji if old_emoji else '📅' # 如果舊的也是空的，才給預設
-        else:
-            emoji_to_save = input_emoji
-
-        # 3. 顏色也做相同的防呆處理，避免顏色一起消失
-        input_color = data.get('color')
-        if not input_color or str(input_color).strip() == "":
-            color_to_save = old_color if old_color else '#4f46e5'
-        else:
-            color_to_save = input_color
-
-        # 4. 執行更新
+        # Updates for description, emoji, and color are also reserved here
         query = """
             UPDATE Event 
             SET category_id = ?, title = ?, description = ?, emoji = ?, color = ?, 
@@ -537,8 +442,8 @@ def update_event(event_id):
             data.get('category_id', 1),
             data.get('title'),
             data.get('description', ''),
-            emoji_to_save,            # 使用防呆後的 emoji
-            color_to_save,            # 使用防呆後的 color
+            data.get('emoji', '📅'),
+            data.get('color', '#4f46e5'),
             data.get('date'),
             data.get('time'),
             data.get('loc'),
@@ -548,12 +453,12 @@ def update_event(event_id):
         ))
         conn.commit()
         return jsonify({"success": True, "message": "Event updated successfully!"})
-        return jsonify({"success": True, "message": "Event updated successfully!"})
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
 
 # 11. Delete Event (DELETE /api/events/<int:event_id>)
 @app.route('/api/events/<int:event_id>', methods=['DELETE'])
@@ -565,10 +470,7 @@ def delete_event(event_id):
         cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
         if not cursor.fetchone():
             return jsonify({"error": "Event not found, deletion failed"}), 404
-            return jsonify({"error": "Event not found, deletion failed"}), 404
 
-        # 🛠️ [Mandatory Fix for Cascade Deletion Order]
-        # 1. Delete associated dietary requirements (Dietary_Req) first
         # 🛠️ [Mandatory Fix for Cascade Deletion Order]
         # 1. Delete associated dietary requirements (Dietary_Req) first
         cursor.execute("""
@@ -577,22 +479,18 @@ def delete_event(event_id):
         """, (event_id,))
         
         # 2. Then delete associated registration records (Registration)
-        # 2. Then delete associated registration records (Registration)
         cursor.execute("DELETE FROM Registration WHERE event_id = ?", (event_id,))
         
-        # 3. Finally delete the event object itself (Event)
         # 3. Finally delete the event object itself (Event)
         cursor.execute("DELETE FROM Event WHERE event_id = ?", (event_id,))
         
         conn.commit()
-        return jsonify({"success": True, "message": "Event deleted successfully!"})
         return jsonify({"success": True, "message": "Event deleted successfully!"})
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
