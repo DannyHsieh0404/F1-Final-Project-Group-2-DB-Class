@@ -2,7 +2,7 @@
 const API_BASE = 'http://127.0.0.1:5000/api';
 
 let ACTS = [];
-
+//yeeeee
 const REGISTRATIONS = {
   0: [
   ],
@@ -13,10 +13,23 @@ const REGISTRATIONS = {
 };
 
 const TAGCOLOR = {
-  'Sports':'green','Competition':'green','Arts':'purple','Handicraft':'orange',
-  'Music':'purple','Eco':'blue','Life':'blue','IT':'blue',
-  'Exhibition':'purple','Lecture':'orange','Culture':'green','Exchange':'green',
-  'Health':'green','Entertainment':'purple'
+  'Competition':'green','Arts':'purple','Music':'purple','Eco / Environment':'green',
+  'IT / Info':'blue','Photography':'purple','Lectures':'orange','Culture':'green',
+  'Sports & Exercise':'green','Gaming / Esports':'purple','Lifestyle':'orange'
+};
+
+const CATEGORY_IDS = {
+  'Competition': 1,
+  'Arts': 2,
+  'Music': 3,
+  'Eco / Environment': 4,
+  'IT / Info': 5,
+  'Photography': 6,
+  'Lectures': 7,
+  'Culture': 8,
+  'Sports & Exercise': 9,
+  'Gaming / Esports': 10,
+  'Lifestyle': 11
 };
 
 const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
@@ -115,11 +128,14 @@ function switchTab(i) {
 const adminScreens = ['admin-screen-dashboard','admin-screen-registrations','admin-screen-profile'];
 const adminNavs = ['anav0','anav1','anav2'];
 
-function switchAdminTab(i) {
+async function switchAdminTab(i) {
   adminScreens.forEach((s, idx) => document.getElementById(s).classList.toggle('active', idx === i));
   adminNavs.forEach((n, idx) => document.getElementById(n).classList.toggle('active', idx === i));
   if (i === 0) renderAdminDashboard();
-  if (i === 1) loadAllRegistrations();
+  if (i === 1) {
+    await loadAllRegistrations();
+    renderAdminRegistrations();
+  }
   if (i === 2) renderAdminProfile();
 }
 
@@ -145,7 +161,8 @@ function doFilter() {
       (act.loc && act.loc.toLowerCase().includes(keyword)) ||
       (act.desc && act.desc.toLowerCase().includes(keyword))
     );
-    const matchTag = selectedTag === 'all' || act.emoji === selectedTag;
+    const tags = Array.isArray(act.tags) ? act.tags : (act.tags ? [act.tags] : []);
+    const matchTag = selectedTag === 'all' || tags.includes(selectedTag);
     return matchText && matchTag;
   });
 
@@ -183,6 +200,54 @@ function renderCards() {
   }).join('');
 }
 
+function padCalendarPart(value) {
+  return String(value).padStart(2, '0');
+}
+
+function parseCalendarDate(value) {
+  const match = String(value || '').match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!match) return null;
+
+  const [, year, month, day, hour = '0', minute = '0'] = match;
+  return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+}
+
+function formatCalendarDate(date) {
+  return [
+    date.getFullYear(),
+    padCalendarPart(date.getMonth() + 1),
+    padCalendarPart(date.getDate())
+  ].join('') + 'T' + [
+    padCalendarPart(date.getHours()),
+    padCalendarPart(date.getMinutes()),
+    '00'
+  ].join('');
+}
+
+function getCalendarEvent(id) {
+  const fullEvent = window.allEvents ? window.allEvents.find(x => x.id === id) : null;
+  const listedEvent = ACTS.find(x => x.id === id);
+  const registeredEvent = myActivities.find(x => x.id === id);
+  return { ...(registeredEvent || {}), ...(listedEvent || {}), ...(fullEvent || {}) };
+}
+
+function buildGoogleCalendarUrl(event) {
+  const url = new URL('https://calendar.google.com/calendar/render');
+  url.searchParams.set('action', 'TEMPLATE');
+  url.searchParams.set('text', event.title || 'NSYSU Event');
+  url.searchParams.set('location', event.loc || '');
+  url.searchParams.set('details', event.desc || 'Registered event from NSYSU Event Registration Platform.');
+  url.searchParams.set('ctz', 'Asia/Taipei');
+
+  const start = parseCalendarDate(event.date);
+  if (start) {
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    url.searchParams.set('dates', `${formatCalendarDate(start)}/${formatCalendarDate(end)}`);
+  }
+
+  return url.toString();
+}
+
 // =================== DETAIL ===================
 function openDetail(id) {
   const a = ACTS.find(x => x.id === id) || myActivities.find(x => x.id === id);
@@ -207,6 +272,7 @@ function openDetail(id) {
 
   const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
+  const calendarBtn = document.getElementById('calendarBtn');
   
   if (!currentUser) {
     btn.textContent = 'Register Now';
@@ -224,6 +290,16 @@ function openDetail(id) {
     btn.textContent = 'Register Now';
     btn.className = 'register-btn';
     btn.disabled = false;
+  }
+
+  if (calendarBtn) {
+    if (already) {
+      calendarBtn.href = buildGoogleCalendarUrl(getCalendarEvent(id));
+      calendarBtn.hidden = false;
+    } else {
+      calendarBtn.hidden = true;
+      calendarBtn.href = '#';
+    }
   }
 
   document.getElementById('detailOverlay').classList.add('open');
@@ -265,7 +341,11 @@ function selectMeal(type) {
 }
 
 async function loadMyActivities() {
-  if (!currentUser || !currentUser.id_db) return;
+  if (!currentUser || !currentUser.id_db) {
+    myActivities = [];
+    renderCards();
+    return;
+  }
   try {
     const res = await fetch(`${API_BASE}/my-activities/${currentUser.id_db}`);
     if (!res.ok) throw new Error('Failed to load my activities');
@@ -278,6 +358,7 @@ async function loadMyActivities() {
       date: d.date,
       meal: d.dietary_req || null
     }));
+    renderCards();
     if (document.getElementById('screen-mine').classList.contains('active')) {
       renderMine();
     }
@@ -314,6 +395,12 @@ async function submitReg() {
 
     const btn = document.getElementById('regBtn');
     btn.textContent = '✕ Cancel Registration'; btn.className = 'register-btn cancel';
+
+    const calendarBtn = document.getElementById('calendarBtn');
+    if (calendarBtn) {
+      calendarBtn.href = buildGoogleCalendarUrl(getCalendarEvent(currentDetailId));
+      calendarBtn.hidden = false;
+    }
 
     const reloaded = ACTS.find(x => x.id === currentDetailId);
     if (reloaded) document.getElementById('dQuota').textContent = reloaded.quota;
@@ -407,6 +494,11 @@ async function confirmCancel() {
     if (currentDetailId === cancelTargetId) {
       const btn = document.getElementById('regBtn');
       btn.textContent = 'Register Now'; btn.className = 'register-btn'; btn.disabled = false;
+      const calendarBtn = document.getElementById('calendarBtn');
+      if (calendarBtn) {
+        calendarBtn.hidden = true;
+        calendarBtn.href = '#';
+      }
       const reloadedA = ACTS.find(x => x.id === cancelTargetId);
       document.getElementById('dQuota').textContent = reloadedA ? reloadedA.quota : a.quota;
     }
@@ -470,7 +562,7 @@ async function doLogin() {
     resetFilter(); // 登入時重置篩選
 
     if (currentRole === 'admin' && (currentUser.role === 'Organizer' || currentUser.role === 'Admin')) {
-      showAdminInterface();
+      await showAdminInterface();
     } else {
       showUserInterface();
       renderProfile();
@@ -524,7 +616,7 @@ async function doRegister() {
       if (code && code !== 'nsysu2025' && code !== '2025admin') return alert('Incorrect administrator verification code (Hint: nsysu2025)');
       closeAuth();
       resetFilter(); // 註冊為管理員時重置篩選
-      showAdminInterface();
+      await showAdminInterface();
     } else {
       closeAuth();
       resetFilter(); // 註冊為一般使用者時重置篩選
@@ -596,7 +688,9 @@ function renderMine() {
     el.innerHTML = `<div class="empty-state"><i class="ti ti-mood-empty"></i><p>You haven't registered for any events yet</p><button class="lp-btn outline" onclick="switchTab(0)" style="margin-top:4px">Explore Events</button></div>`;
     return;
   }
-  el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => `
+  el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => {
+    const calendarUrl = buildGoogleCalendarUrl(getCalendarEvent(m.id));
+    return `
     <div class="my-act-card" onclick="openDetailFromMine(${m.id})">
       <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
       <div class="my-act-info">
@@ -605,9 +699,11 @@ function renderMine() {
       </div>
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
+        <a class="calendar-small-btn" href="${calendarUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><i class="ti ti-calendar-plus"></i>Calendar</a>
         <button class="cancel-small-btn" onclick="event.stopPropagation();cancelFromMine(${m.id})">Cancel</button>
       </div>
-    </div>`).join('') + `</div>`;
+    </div>`;
+  }).join('') + `</div>`;
 }
 
 function openDetailFromMine(id) {
@@ -945,7 +1041,7 @@ function renderAdminRegistrations() {
         </div>
         <div><div class="reg-overview-count">${a.quota}<span>/ ${a.max} Attendees</span></div></div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
         <div style="flex:1"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>
         <div class="admin-meal-pills">
           <span class="meal-pill meat">🍖 ${meat}</span>
@@ -1227,6 +1323,7 @@ async function loadEvents() {
 
     if (currentRole === 'admin') {
       renderAdminDashboard();
+      renderAdminRegistrations();
     }
   } catch (error) {
     console.error('Failed to load events from DB:', error);
@@ -1243,7 +1340,6 @@ const searchBtn = document.getElementById('searchBtn');
 if (searchBtn) searchBtn.addEventListener('click', doFilter);
 
 // =================== INIT ===================
-loadEvents();
 // 還原登入狀態，不用亦刷新就重新登入
 async function init() {
   const savedUser = localStorage.getItem('currentUser');
@@ -1253,8 +1349,8 @@ async function init() {
     currentUser = JSON.parse(savedUser);
     currentRole = savedRole;
     if (currentRole === 'admin') {
-      showAdminInterface();
       await loadEvents();
+      await showAdminInterface();
     } else {
       showUserInterface();
       renderProfile();
