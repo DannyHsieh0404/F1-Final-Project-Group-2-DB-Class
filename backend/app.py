@@ -45,8 +45,7 @@ def get_events():
                 e.event_day as date, 
                 e.event_time as time,
                 e.location as loc, 
-                e.guest_capacity as max, 
-                e.student_capacity,
+                e.student_capacity as max,
                 (SELECT COUNT(*) FROM Registration r WHERE r.event_id = e.event_id AND r.status = 'Registered') as quota
             FROM Event e
             LEFT JOIN Category c ON e.category_id = c.category_id
@@ -388,8 +387,7 @@ def create_event():
     event_day = data.get('date')               
     event_time = data.get('time')
     location = data.get('loc')
-    guest_capacity = data.get('max')
-    student_capacity = data.get('student_capacity', 0)
+    student_capacity = data.get('max', 0)
     description = data.get('description', '')
     emoji = data.get('emoji', '📅')
     color = data.get('color', '#4f46e5')
@@ -405,10 +403,10 @@ def create_event():
         
         
         query = """
-            INSERT INTO Event (category_id, title, description, emoji, color, host_id, event_day, event_time, location, guest_capacity, student_capacity)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO Event (category_id, title, description, emoji, color, host_id, event_day, event_time, location, student_capacity)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        cursor.execute(query, (category_id, title, description, emoji, color, host_id, event_day, event_time, location, guest_capacity, student_capacity))
+        cursor.execute(query, (category_id, title, description, emoji, color, host_id, event_day, event_time, location, student_capacity))
         conn.commit()
         return jsonify({"success": True, "message": "Event created successfully!", "event_id": cursor.lastrowid})
     except Exception as e:
@@ -438,7 +436,7 @@ def update_event(event_id):
         query = """
             UPDATE Event 
             SET category_id = ?, title = ?, description = ?, emoji = ?, color = ?, 
-                event_day = ?, event_time = ?, location = ?, guest_capacity = ?, student_capacity = ?
+                event_day = ?, event_time = ?, location = ?, student_capacity = ?
             WHERE event_id = ?
         """
         cursor.execute(query, (
@@ -450,8 +448,7 @@ def update_event(event_id):
             data.get('date'),
             data.get('time'),
             data.get('loc'),
-            data.get('max'),
-            data.get('student_capacity', 0),
+            data.get('max', 0),
             event_id
         ))
         conn.commit()
