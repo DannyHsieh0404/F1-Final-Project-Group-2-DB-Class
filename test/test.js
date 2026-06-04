@@ -32,6 +32,15 @@ const CATEGORY_IDS = {
   'Lifestyle': 11
 };
 
+function getCategoryId(categoryName) {
+  return CATEGORY_IDS[categoryName] || 1;
+}
+
+function getPrimaryTag(tags) {
+  if (Array.isArray(tags)) return tags[0] || 'Uncategorized';
+  return tags || 'Uncategorized';
+}
+
 const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
 
 // =================== STATE ===================
@@ -356,6 +365,7 @@ async function loadMyActivities() {
       emoji: d.emoji || '📅',
       color: d.color || 'blue',
       date: d.date,
+      tags: d.tags ? [d.tags] : [],
       meal: d.dietary_req || null
     }));
     renderCards();
@@ -690,12 +700,14 @@ function renderMine() {
   }
   el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => {
     const calendarUrl = buildGoogleCalendarUrl(getCalendarEvent(m.id));
+    const tag = getPrimaryTag(m.tags);
     return `
     <div class="my-act-card" onclick="openDetailFromMine(${m.id})">
       <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
       <div class="my-act-info">
         <h4>${m.title}</h4>
         <p>${m.date} · ${m.meal==='meat'?'🍖 Non-Vegetarian':'🌿 Vegetarian'}</p>
+        <div class="act-tags"><span class="tag ${TAGCOLOR[tag] || 'green'}">${tag}</span></div>
       </div>
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
@@ -1068,7 +1080,7 @@ function openAddActivity() {
   document.getElementById('af_max').value   = '100';
   document.getElementById('af_emoji').value = '💻';
   document.getElementById('af_color').value = 'blue';
-  document.getElementById('af_tags').value  = '';
+  document.getElementById('af_tags').value  = 'IT / Info';
   document.getElementById('af_desc').value  = '';
   document.getElementById('activityFormModal').classList.add('open');
 }
@@ -1090,7 +1102,7 @@ function openEditActivity(id) {
   document.getElementById('af_max').value   = a.max;
   document.getElementById('af_emoji').value = a.emoji;
   document.getElementById('af_color').value = a.color;
-  document.getElementById('af_tags').value  = Array.isArray(a.tags) ? a.tags.join(',') : (a.tags || '');
+  document.getElementById('af_tags').value  = getPrimaryTag(a.tags);
   document.getElementById('af_desc').value  = a.desc;
   document.getElementById('activityFormModal').classList.add('open');
 }
@@ -1119,7 +1131,8 @@ async function submitActivityForm() {
   const emoji = document.getElementById('af_emoji').value;
   const color = document.getElementById('af_color').value;
   const desc  = document.getElementById('af_desc').value.trim();
-  const category_id = parseInt(document.getElementById('af_tags').value) || 1;
+  const category = document.getElementById('af_tags').value;
+  const category_id = getCategoryId(category);
 
   if (!title || !date || !time || !loc) return alert('Please fill in the event name, date, time, and location');
 
@@ -1311,6 +1324,7 @@ async function loadEvents() {
       date: `${d.date} ${d.time}`,
       loc: d.loc,
       tags: d.tags ? [d.tags] : [],
+      category_id: d.category_id,
       quota: d.quota || 0,
       max: d.student_capacity,
       desc: d.description || '',

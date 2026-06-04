@@ -38,17 +38,17 @@
 
           <select id="filterTag"><!--篩選類別 -->
             <option value="all">All Tags</option>
-            <option value="🏀">🏀 Competetion</option>
-            <option value="🎨">🎨 Arts</option>
-            <option value="🎵">🎵 Music</option>
-            <option value="🌿">🌿 Eco / Environment</option>
-            <option value="💻">💻 IT / Info</option>
-            <option value="📸">📸 Photography</option>
-            <option value="🧠">🧠 Lectures</option>
-            <option value="🌏">🌏 Culture</option>
-            <option value="🏃">🏃 Sports & Exercise</option>
-            <option value="🎮">🎮 Gaming / Esports</option>
-            <option value="🍳">🍳 Lifestyle</option>
+            <option value="Competition">Competition</option>
+            <option value="Arts">Arts</option>
+            <option value="Music">Music</option>
+            <option value="Eco / Environment">Eco / Environment</option>
+            <option value="IT / Info">IT / Info</option>
+            <option value="Photography">Photography</option>
+            <option value="Lectures">Lectures</option>
+            <option value="Culture">Culture</option>
+            <option value="Sports & Exercise">Sports & Exercise</option>
+            <option value="Gaming / Esports">Gaming / Esports</option>
+            <option value="Lifestyle">Lifestyle</option>
           </select>
         </div>
 
@@ -293,7 +293,7 @@
         </div>
         <div class="emoji-color-row">
           <select id="af_emoji">
-            <option value="🏀">🏀 Competetion</option>
+            <option value="🏀">🏀 Competition</option>
             <option value="🎨">🎨 Arts</option>
             <option value="🎵">🎵 Music</option>
             <option value="🌿">🌿 Eco / Environment</option>
@@ -312,7 +312,19 @@
             <option value="blue">Blue</option>
           </select>
         </div>
-        <input type="text" placeholder='Tags（Divided by "," eg: sports, competetion）' id="af_tags">
+        <select id="af_tags" aria-label="Category">
+          <option value="Competition">Competition</option>
+          <option value="Arts">Arts</option>
+          <option value="Music">Music</option>
+          <option value="Eco / Environment">Eco / Environment</option>
+          <option value="IT / Info">IT / Info</option>
+          <option value="Photography">Photography</option>
+          <option value="Lectures">Lectures</option>
+          <option value="Culture">Culture</option>
+          <option value="Sports & Exercise">Sports & Exercise</option>
+          <option value="Gaming / Esports">Gaming / Esports</option>
+          <option value="Lifestyle">Lifestyle</option>
+        </select>
         <textarea id="af_desc" placeholder="Description"></textarea>
         <button class="modal-submit" onclick="submitActivityForm()">Save</button>
         <button class="modal-cancel" onclick="closeActivityForm()">Cancel</button>

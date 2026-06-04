@@ -36,6 +36,7 @@ def get_events():
         query = """
             SELECT
                 e.event_id as id, 
+                e.category_id,
                 c.category_name as tags,
                 e.title,
                 e.description,
@@ -145,6 +146,7 @@ def get_my_activities(user_id):
                 e.event_id as id,
                 e.title,
                 e.description,
+                c.category_name as tags,
                 e.emoji, 
                 e.color, 
                 e.event_day as date,
@@ -152,6 +154,7 @@ def get_my_activities(user_id):
                 d.dietary_req
             FROM Registration r
             JOIN Event e ON r.event_id = e.event_id
+            LEFT JOIN Category c ON e.category_id = c.category_id
             LEFT JOIN Dietary_Req d ON r.registration_id = d.registration_id
             WHERE r.user_id = ? AND r.status = 'Registered'
         """

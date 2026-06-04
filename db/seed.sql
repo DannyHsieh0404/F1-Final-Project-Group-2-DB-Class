@@ -7,9 +7,17 @@ INSERT INTO User (user_id, role, password, name, department, email, phone) VALUE
 
 -- 插入 Category 範例資料
 INSERT INTO Category (category_name) VALUES
-('Seminar'),
-('Workshop'),
-('Social');
+('Competition'),
+('Arts'),
+('Music'),
+('Eco / Environment'),
+('IT / Info'),
+('Photography'),
+('Lectures'),
+('Culture'),
+('Sports & Exercise'),
+('Gaming / Esports'),
+('Lifestyle');
 
 -- 插入 Event 範例資料
 INSERT INTO Event (category_id, title, description, emoji, color, host_id, department, event_day, event_time, location, guest_capacity, student_capacity) VALUES
