@@ -259,7 +259,8 @@ function buildGoogleCalendarUrl(event) {
 
 // =================== DETAIL ===================
 function openDetail(id) {
-  const a = ACTS.find(x => x.id === id) || myActivities.find(x => x.id === id);
+  const fullEvent = window.allEvents ? window.allEvents.find(x => x.id === id) : null;
+  const a = ACTS.find(x => x.id === id) || myActivities.find(x => x.id === id) || fullEvent;
   if (!a) return;
   currentDetailId = id;
 
@@ -821,9 +822,17 @@ let bannerTimer = null;
 function renderBanner() {
   const scroll = document.getElementById('bannerScroll');
   const dotWrap = document.querySelector('.banner-dot');
-  if (!scroll || ACTS.length === 0) return;
+  if (!scroll) return;
 
-  const items = ACTS.slice(0, 3);
+  const sourceEvents = window.allEvents || ACTS;
+  if (sourceEvents.length === 0) {
+    scroll.innerHTML = '';
+    if (dotWrap) dotWrap.innerHTML = '';
+    clearInterval(bannerTimer);
+    return;
+  }
+
+  const items = sourceEvents.slice(0, 3);
   scroll.innerHTML = items.map((a, i) => `
   <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
     <div class="label">${BANNER_LABELS[i] || '📅 Event'}</div>
@@ -831,9 +840,11 @@ function renderBanner() {
     <div class="title">${a.title}</div>
   </div>`).join('');
 
-  dotWrap.innerHTML = items.map((_, i) =>
-    `<span id="d${i}" class="${i === 0 ? 'on' : ''}"></span>`
-  ).join('');
+  if (dotWrap) {
+    dotWrap.innerHTML = items.map((_, i) =>
+      `<span id="d${i}" class="${i === 0 ? 'on' : ''}"></span>`
+    ).join('');
+  }
 
   bannerIndex = 0;
   scroll.scrollLeft = 0;
