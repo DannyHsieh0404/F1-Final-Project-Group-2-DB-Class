@@ -112,8 +112,8 @@ def register_event():
                 return jsonify({"error": "Sorry, this event is fully booked!"}), 400
             # 2. If never registered before, proceed with standard insertion flow (using localtime to fix Taiwan timezone)
             query_reg = """
-                INSERT INTO Registration (event_id, user_id, status, attendance_flag, registration_date) 
-                VALUES (?, ?, 'Registered', 0, datetime('now', 'localtime'))
+                INSERT INTO Registration (event_id, user_id, status, registration_date) 
+                VALUES (?, ?, 'Registered', datetime('now', 'localtime'))
             """
             cursor.execute(query_reg, (event_id, user_id))
             registration_id = cursor.lastrowid # Get the newly generated PK

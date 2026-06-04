@@ -1336,8 +1336,8 @@ async function loadEvents() {
       loc: d.loc,
       tags: d.tags ? [d.tags] : [],
       category_id: d.category_id,
-      quota: d.quota || 0,
-      max: d.student_capacity,
+      quota: Number(d.quota) || 0,
+      max: Number(d.student_capacity) || Number(d.max) || 0,
       desc: d.description || '',
       department: d.department || d.dept || 'College of Management'
     }));
