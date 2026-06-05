@@ -12,6 +12,23 @@ app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path='')
 # Enable CORS to allow the frontend web pages to smoothly call the API
 CORS(app)
 
+DEFAULT_MEAL_OPTIONS = ['meat', 'veg']
+
+
+def normalize_meal_value(value):
+    if value is None:
+        return None
+    cleaned = str(value).strip().lower()
+    return cleaned or None
+
+
+def get_meal_options(cursor):
+    cursor.execute("SELECT meal_option FROM Meal_Option ORDER BY meal_option")
+    options = [normalize_meal_value(row[0]) for row in cursor.fetchall()]
+    options = [option for option in options if option]
+    return options or DEFAULT_MEAL_OPTIONS.copy()
+
+
 # === Serve Frontend Web Page Routing ===
 @app.route('/')
 def serve_index():
@@ -21,6 +38,36 @@ def serve_index():
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory(app.static_folder, path)
+
+
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    conn = get_db_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT category_id as id, category_name as name
+            FROM Category
+            ORDER BY category_id
+        """)
+        return jsonify([dict(row) for row in cursor.fetchall()])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/meal-options', methods=['GET'])
+def get_meal_option_categories():
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        return jsonify(get_meal_options(cursor))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 # 1. Get all events list
 @app.route('/api/events', methods=['GET'])
@@ -53,12 +100,14 @@ def get_events():
         cursor.execute(query)
         # Convert data into dictionary format
         events = [dict(row) for row in cursor.fetchall()]
+        meal_options = get_meal_options(cursor)
 
         # Convert date format
         for event in events:
             if event['date']:
                 # SQLite returns data as string, can be handled directly (if format is YYYY-MM-DD, convert to YYYY/MM/DD)
                 event['date'] = str(event['date']).replace('-', '/')
+            event['meal_options'] = meal_options.copy()
 
         return jsonify(events)
     except Exception as e:
@@ -72,7 +121,7 @@ def register_event():
     data = request.json
     user_id = data.get('user_id')
     event_id = data.get('event_id')
-    dietary_req = data.get('dietary_req', None)
+    dietary_req = normalize_meal_value(data.get('dietary_req'))
 
     if not user_id or not event_id:
         return jsonify({"error": "Missing user_id or event_id"}), 400
@@ -80,6 +129,11 @@ def register_event():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+
+        if dietary_req:
+            meal_options = get_meal_options(cursor)
+            if dietary_req not in meal_options:
+                return jsonify({"error": "Invalid meal option"}), 400
 
         # 1. First, check if the user has registered before
         cursor.execute("SELECT registration_id, status FROM Registration WHERE event_id = ? AND user_id = ?", (event_id, user_id))
@@ -163,6 +217,7 @@ def get_my_activities(user_id):
         for act in activities:
             if act['date']:
                 act['date'] = str(act['date']).replace('-', '/')
+            act['dietary_req'] = normalize_meal_value(act.get('dietary_req'))
 
         return jsonify(activities)
     except Exception as e:
@@ -361,6 +416,7 @@ def get_all_registrations():
         regs_dict = {}
         for row in rows:
             eid = row.pop('event_id')
+            row['meal'] = normalize_meal_value(row.get('meal'))
             if eid not in regs_dict:
                 regs_dict[eid] = []
             regs_dict[eid].append(row)
@@ -407,8 +463,9 @@ def create_event():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         cursor.execute(query, (category_id, title, description, emoji, color, host_id, event_day, event_time, location, student_capacity))
+        event_id = cursor.lastrowid
         conn.commit()
-        return jsonify({"success": True, "message": "Event created successfully!", "event_id": cursor.lastrowid})
+        return jsonify({"success": True, "message": "Event created successfully!", "event_id": event_id})
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
@@ -426,7 +483,7 @@ def update_event(event_id):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        
+
         # Check if the event exists first
         cursor.execute("SELECT event_id FROM Event WHERE event_id = ?", (event_id,))
         if not cursor.fetchone():
