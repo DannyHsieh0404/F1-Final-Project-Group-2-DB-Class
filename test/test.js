@@ -18,22 +18,60 @@ const TAGCOLOR = {
   'Sports & Exercise':'green','Gaming / Esports':'purple','Lifestyle':'orange'
 };
 
-const CATEGORY_IDS = {
-  'Competition': 1,
-  'Arts': 2,
-  'Music': 3,
-  'Eco / Environment': 4,
-  'IT / Info': 5,
-  'Photography': 6,
-  'Lectures': 7,
-  'Culture': 8,
-  'Sports & Exercise': 9,
-  'Gaming / Esports': 10,
-  'Lifestyle': 11
-};
+const DEFAULT_CATEGORIES = [
+  { id: 1, name: 'Competition' },
+  { id: 2, name: 'Arts' },
+  { id: 3, name: 'Music' },
+  { id: 4, name: 'Eco / Environment' },
+  { id: 5, name: 'IT / Info' },
+  { id: 6, name: 'Photography' },
+  { id: 7, name: 'Lectures' },
+  { id: 8, name: 'Culture' },
+  { id: 9, name: 'Sports & Exercise' },
+  { id: 10, name: 'Gaming / Esports' },
+  { id: 11, name: 'Lifestyle' }
+];
+let CATEGORIES = [...DEFAULT_CATEGORIES];
+let CATEGORY_IDS = Object.fromEntries(CATEGORIES.map(c => [c.name, c.id]));
 
 function getCategoryId(categoryName) {
   return CATEGORY_IDS[categoryName] || 1;
+}
+
+function renderCategorySelects() {
+  const filterTag = document.getElementById('filterTag');
+  if (filterTag) {
+    const currentValue = filterTag.value || 'all';
+    filterTag.innerHTML = [
+      '<option value="all">All Tags</option>',
+      ...CATEGORIES.map(c => `<option value="${c.name}">${c.name}</option>`)
+    ].join('');
+    filterTag.value = CATEGORIES.some(c => c.name === currentValue) ? currentValue : 'all';
+  }
+
+  const adminTag = document.getElementById('af_tags');
+  if (adminTag) {
+    const currentValue = adminTag.value;
+    adminTag.innerHTML = CATEGORIES.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    adminTag.value = CATEGORIES.some(c => c.name === currentValue)
+      ? currentValue
+      : (CATEGORIES[0]?.name || '');
+  }
+}
+
+async function loadCategories() {
+  try {
+    const res = await fetch(`${API_BASE}/categories`);
+    if (!res.ok) throw new Error('Failed to load categories');
+    const data = await res.json();
+    CATEGORIES = data.map(c => ({ id: Number(c.id), name: c.name })).filter(c => c.id && c.name);
+    if (!CATEGORIES.length) CATEGORIES = [...DEFAULT_CATEGORIES];
+  } catch (error) {
+    console.error('Failed to load categories:', error);
+    CATEGORIES = [...DEFAULT_CATEGORIES];
+  }
+  CATEGORY_IDS = Object.fromEntries(CATEGORIES.map(c => [c.name, c.id]));
+  renderCategorySelects();
 }
 
 function getPrimaryTag(tags) {
@@ -42,6 +80,60 @@ function getPrimaryTag(tags) {
 }
 
 const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
+const DEFAULT_MEAL_OPTIONS = ['meat', 'veg'];
+let MEAL_OPTIONS = [...DEFAULT_MEAL_OPTIONS];
+const MEAL_META = {
+  meat: { label: 'Non-Vegetarian', icon: 'ti-meat', className: 'meat' },
+  veg: { label: 'Vegetarian', icon: 'ti-leaf', className: 'veg' }
+};
+
+function getMealOptions(eventData) {
+  return Array.isArray(eventData?.meal_options) && eventData.meal_options.length
+    ? eventData.meal_options
+    : MEAL_OPTIONS;
+}
+
+function getMealMeta(option) {
+  return MEAL_META[option] || { label: option, icon: 'ti-tools-kitchen-2', className: 'custom' };
+}
+
+function formatMealLabel(option) {
+  return getMealMeta(option).label;
+}
+
+function formatMealIcon(option) {
+  return option === 'meat' ? '🍖' : (option === 'veg' ? '🌿' : '🍽');
+}
+
+function normalizeRegistrationMeal(meal) {
+  if (!meal) return 'meat';
+  const value = String(meal).trim().toLowerCase();
+  if (value === 'meat' || value === 'veg') return value;
+  if (String(meal).includes('素')) return 'veg';
+  return value;
+}
+
+function renderMealOptions(eventData) {
+  const wrap = document.getElementById('mealOptions');
+  if (!wrap) return;
+  const options = getMealOptions(eventData);
+  wrap.innerHTML = options.map(option => {
+    const meta = getMealMeta(option);
+    return `<button class="meal-btn" data-meal="${option}" onclick="selectMeal('${option}')"><i class="ti ${meta.icon}"></i>${meta.label}</button>`;
+  }).join('');
+}
+
+async function loadMealOptions() {
+  try {
+    const res = await fetch(`${API_BASE}/meal-options`);
+    if (!res.ok) throw new Error('Failed to load meal options');
+    const data = await res.json();
+    MEAL_OPTIONS = Array.isArray(data) && data.length ? data : [...DEFAULT_MEAL_OPTIONS];
+  } catch (error) {
+    console.error('Failed to load meal options:', error);
+    MEAL_OPTIONS = [...DEFAULT_MEAL_OPTIONS];
+  }
+}
 
 // =================== STATE ===================
 let currentUser = null;
@@ -333,8 +425,8 @@ function handleRegister() {
   } else {
     mealModalMode = 'register';
     selectedMeal = null;
-    document.getElementById('meatBtn').classList.remove('selected');
-    document.getElementById('vegBtn').classList.remove('selected');
+    const a = ACTS.find(x => x.id === currentDetailId) || window.allEvents?.find(x => x.id === currentDetailId);
+    renderMealOptions(a);
     document.getElementById('submitMealBtn').style.opacity = '0.5';
     document.getElementById('submitMealBtn').style.pointerEvents = 'none';
     document.getElementById('mealModal').classList.add('open');
@@ -344,8 +436,9 @@ function handleRegister() {
 
 function selectMeal(type) {
   selectedMeal = type;
-  document.getElementById('meatBtn').classList.toggle('selected', type === 'meat');
-  document.getElementById('vegBtn').classList.toggle('selected', type === 'veg');
+  document.querySelectorAll('#mealOptions .meal-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.meal === type);
+  });
   document.getElementById('submitMealBtn').style.opacity = '1';
   document.getElementById('submitMealBtn').style.pointerEvents = 'auto';
 }
@@ -367,7 +460,7 @@ async function loadMyActivities() {
       color: d.color || 'blue',
       date: d.date,
       tags: d.tags ? [d.tags] : [],
-      meal: d.dietary_req || null
+      meal: normalizeRegistrationMeal(d.dietary_req)
     }));
     renderCards();
     if (document.getElementById('screen-mine').classList.contains('active')) {
@@ -398,7 +491,7 @@ async function submitReg() {
 
     document.getElementById('mealModal').classList.remove('open');
     document.getElementById('submitMealBtn').textContent = 'Confirm Registration';
-    document.getElementById('successMsg').textContent = `You have successfully registered for "${a.title}". Meal preference: ${selectedMeal==='meat'?'Non-Vegetarian':'Vegetarian'}.`;
+    document.getElementById('successMsg').textContent = `You have successfully registered for "${a.title}". Meal preference: ${formatMealLabel(selectedMeal)}.`;
     document.getElementById('successModal').classList.add('open');
 
     await loadMyActivities();
@@ -448,7 +541,7 @@ async function updateMealPreference() {
     await loadEvents();
     renderMine();
     openDetail(a.id);
-    showAdminSuccess('Meal Preference Updated', `Your meal preference for "${a.title}" is now ${selectedMeal === 'meat' ? 'Non-Vegetarian' : 'Vegetarian'}.`);
+    showAdminSuccess('Meal Preference Updated', `Your meal preference for "${a.title}" is now ${formatMealLabel(selectedMeal)}.`);
   } catch (e) {
     console.error(e);
     alert(e.message || 'Failed to update meal preference');
@@ -707,7 +800,7 @@ function renderMine() {
       <div class="my-act-icon" style="background:${HEROCOLOR[m.color]}">${m.emoji}</div>
       <div class="my-act-info">
         <h4>${m.title}</h4>
-        <p>${m.date} · ${m.meal==='meat'?'🍖 Non-Vegetarian':'🌿 Vegetarian'}</p>
+        <p>${m.date} · ${formatMealIcon(m.meal)} ${formatMealLabel(m.meal)}</p>
         <div class="act-tags"><span class="tag ${TAGCOLOR[tag] || 'green'}">${tag}</span></div>
       </div>
       <div class="my-act-right">
@@ -1038,7 +1131,7 @@ async function loadAllRegistrations() {
     Object.entries(data).forEach(([k, v]) => {
       REGISTRATIONS[Number(k)] = v.map(r => ({
         ...r,
-        meal: (r.meal && r.meal.includes('素')) ? 'veg' : 'meat'
+        meal: normalizeRegistrationMeal(r.meal)
       }));
     });
   } catch (error) {
@@ -1085,13 +1178,12 @@ function openAddActivity() {
   document.getElementById('af_date').value  = '';
   document.getElementById('af_time').value  = '';
   document.getElementById('af_loc').value   = '';
-  const deptSelect = document.getElementById('af_dept');
-  if (deptSelect) deptSelect.value = 'College of Management';
   document.getElementById('af_quota').value = '0';
   document.getElementById('af_max').value   = '100';
   document.getElementById('af_emoji').value = '💻';
   document.getElementById('af_color').value = 'blue';
-  document.getElementById('af_tags').value  = 'IT / Info';
+  const defaultCategory = CATEGORIES.find(c => c.name === 'IT / Info') || CATEGORIES[0];
+  document.getElementById('af_tags').value  = defaultCategory?.name || '';
   document.getElementById('af_desc').value  = '';
   document.getElementById('activityFormModal').classList.add('open');
 }
@@ -1107,8 +1199,6 @@ function openEditActivity(id) {
   document.getElementById('af_date').value  = editDateTime.date;
   document.getElementById('af_time').value  = editDateTime.time;
   document.getElementById('af_loc').value   = a.loc;
-  const deptSelect = document.getElementById('af_dept');
-  if (deptSelect) deptSelect.value = a.department || 'College of Management';
   document.getElementById('af_quota').value = a.quota;
   document.getElementById('af_max').value   = a.max;
   document.getElementById('af_emoji').value = a.emoji;
@@ -1138,7 +1228,6 @@ async function submitActivityForm() {
   const time  = document.getElementById('af_time').value.trim();
   const loc   = document.getElementById('af_loc').value.trim();
   const max   = parseInt(document.getElementById('af_max').value) || 100;
-  const dept  = document.getElementById('af_dept') ? document.getElementById('af_dept').value : 'College of Management';
   const emoji = document.getElementById('af_emoji').value;
   const color = document.getElementById('af_color').value;
   const desc  = document.getElementById('af_desc').value.trim();
@@ -1154,8 +1243,7 @@ async function submitActivityForm() {
     max, student_capacity: max,
     emoji, color, description: desc,
     category_id,
-    host_id: currentUser.id_db,
-    department: dept
+    host_id: currentUser.id_db
   };
 
   try {
@@ -1339,7 +1427,7 @@ async function loadEvents() {
       quota: Number(d.quota) || 0,
       max: Number(d.student_capacity) || Number(d.max) || 0,
       desc: d.description || '',
-      department: d.department || d.dept || 'College of Management'
+      meal_options: getMealOptions(d)
     }));
 
     window.allEvents = [...ACTS];
@@ -1367,6 +1455,9 @@ if (searchBtn) searchBtn.addEventListener('click', doFilter);
 // =================== INIT ===================
 // 還原登入狀態，不用亦刷新就重新登入
 async function init() {
+  await loadCategories();
+  await loadMealOptions();
+
   const savedUser = localStorage.getItem('currentUser');
   const savedRole = localStorage.getItem('currentRole');
 
