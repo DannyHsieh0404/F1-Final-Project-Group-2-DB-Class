@@ -271,7 +271,7 @@ body {
 .register-btn { width:100%; padding:13px; background:var(--primary); color:#fff; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; transition:opacity 0.2s, background 0.2s; font-family:inherit; }
 .register-btn:active { opacity:0.85; }
 .register-btn.cancel { background:#EF4444; }
-.register-btn:disabled { background:#9E9E9E; cursor:not-allowed; }
+.register-btn:disabled {background: #ababab !important;box-shadow: none;cursor: not-allowed;opacity: 1;}
 .calendar-btn {
   width: 100%;
   padding: 12px;
@@ -1258,7 +1258,7 @@ body {
 }
 
 /* Danger submit button (logout, delete, cancel) */
-.modal-submit.danger { background: #EF4444; }
+.modal-submit.danger {background: #EF4444 !important;}
 
 /* Meal confirm button: disabled-looking state before meal is selected */
 #submitMealBtn {

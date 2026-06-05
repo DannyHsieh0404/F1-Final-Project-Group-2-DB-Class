@@ -566,7 +566,8 @@ function closeMeal() {
 function openCancelModal(id) {
   cancelTargetId = id;
   const a = ACTS.find(x => x.id === id);
-  document.getElementById('cancelMsg').textContent = `Are you sure you want to cancel your registration for "${a.title}"? Your spot will be released.`;
+  document.getElementById('cancelMsg').innerHTML =
+    `Are you sure you want to cancel your registration for "<strong>${a.title}</strong>"? Your spot will be released.`;
   document.getElementById('cancelModal').classList.add('open');
 }
 
