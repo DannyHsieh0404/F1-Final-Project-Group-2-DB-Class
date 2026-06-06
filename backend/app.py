@@ -400,7 +400,7 @@ def get_all_registrations():
         query = """
             SELECT 
                 r.event_id,
-                u.email as uid,
+                u.user_id as uid,
                 u.name,
                 u.department as dept,
                 d.dietary_req as meal
