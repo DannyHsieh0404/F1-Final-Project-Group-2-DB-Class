@@ -912,6 +912,7 @@ const BANNER_GRADIENTS = [
 
 let bannerIndex = 0;
 let bannerTimer = null;
+let bannerItems = [];
 
 function renderBanner() {
   const scroll = document.getElementById('bannerScroll');
@@ -919,64 +920,87 @@ function renderBanner() {
   if (!scroll) return;
 
   const sourceEvents = window.allEvents || ACTS;
-  if (sourceEvents.length === 0) {
+
+  /* 修改 1：額滿活動不放進 Banner */
+  bannerItems = sourceEvents
+    .filter(a => Number(a.quota) < Number(a.max))
+    .slice(0, 5);
+
+  if (bannerItems.length === 0) {
     scroll.innerHTML = '';
     if (dotWrap) dotWrap.innerHTML = '';
     clearInterval(bannerTimer);
     return;
   }
 
-  const items = sourceEvents.slice(0, 3);
-  scroll.innerHTML = items.map((a, i) => `
-  <div class="banner-card" onclick="openDetail(${a.id})" style="background:${BANNER_GRADIENTS[i]}">
-    <div class="label">${BANNER_LABELS[i] || '📅 Event'}</div>
-    <div class="people">${a.quota} / ${a.max} Attending</div>
-    <div class="title">${a.title}</div>
-  </div>`).join('');
+  scroll.innerHTML = bannerItems.map((a, i) => `
+    <div 
+      class="banner-card"
+      data-banner-index="${i}"
+      onclick="openDetail(${a.id})"
+      style="background:${BANNER_GRADIENTS[i % BANNER_GRADIENTS.length]}"
+    >
+      <div class="label">${BANNER_LABELS[i % BANNER_LABELS.length]}</div>
+      <div class="people">${a.quota} / ${a.max} Attending</div>
+      <div class="title">${a.title}</div>
+    </div>
+  `).join('');
 
   if (dotWrap) {
-    dotWrap.innerHTML = items.map((_, i) =>
-      `<span id="d${i}" class="${i === 0 ? 'on' : ''}"></span>`
+    dotWrap.innerHTML = bannerItems.map((_, i) =>
+      `<span class="${i === 0 ? 'on' : ''}"></span>`
     ).join('');
   }
 
   bannerIndex = 0;
-  scroll.scrollLeft = 0;
-  scroll.removeEventListener('scroll', onBannerScroll);
-  scroll.addEventListener('scroll', onBannerScroll);
+  updateBannerPosition();
+
   clearInterval(bannerTimer);
   startBannerAuto();
 }
 
-function onBannerScroll() {
-  const el = document.getElementById('bannerScroll');
-  const idx = Math.round(el.scrollLeft / (el.firstElementChild?.offsetWidth + 12 || 252));
-  updateDots(idx);
-  bannerIndex = idx;
+/* 修改 2：根據目前 bannerIndex 決定哪張在中間、哪張在左右 */
+function updateBannerPosition() {
+  const cards = document.querySelectorAll('.banner-card');
+  const dots = document.querySelectorAll('.banner-dot span');
+  const total = cards.length;
+
+  if (total === 0) return;
+
+  const prevIndex = (bannerIndex - 1 + total) % total;
+  const nextIndex = (bannerIndex + 1) % total;
+
+  cards.forEach((card, i) => {
+    card.classList.remove('active', 'prev', 'next', 'hidden');
+
+    if (i === bannerIndex) {
+      card.classList.add('active');
+    } else if (i === prevIndex) {
+      card.classList.add('prev');
+    } else if (i === nextIndex) {
+      card.classList.add('next');
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('on', i === bannerIndex);
+  });
 }
 
-function getBannerWidth() {
-  const el = document.getElementById('bannerScroll');
-  return el && el.firstElementChild ? el.firstElementChild.offsetWidth + 12 : 0;
-}
-
-function updateDots(index) {
-  document.querySelectorAll('.banner-dot span').forEach((dot, i) =>
-    dot.classList.toggle('on', i === index)
-  );
-}
-
-function moveBanner(index) {
-  const el = document.getElementById('bannerScroll');
-  el.scrollTo({ left: index * getBannerWidth(), behavior: 'smooth' });
-  updateDots(index);
-}
-
+/* 修改 3：往下一張，最後一張會接回第一張 */
 function nextBanner() {
-  const el = document.getElementById('bannerScroll');
-  if (!el.children.length) return;
-  bannerIndex = (bannerIndex + 1) % el.children.length;
-  moveBanner(bannerIndex);
+  if (!bannerItems.length) return;
+  bannerIndex = (bannerIndex + 1) % bannerItems.length;
+  updateBannerPosition();
+}
+
+/* 修改 4：往上一張，第一張也可以接回最後一張 */
+function prevBanner() {
+  if (!bannerItems.length) return;
+  bannerIndex = (bannerIndex - 1 + bannerItems.length) % bannerItems.length;
+  updateBannerPosition();
 }
 
 function startBannerAuto() {
@@ -984,11 +1008,31 @@ function startBannerAuto() {
   bannerTimer = setInterval(nextBanner, 3000);
 }
 
+/* 修改 5：滑鼠移入暫停，移出繼續 */
 const banner = document.getElementById('bannerScroll');
-banner.addEventListener('touchstart', () => clearInterval(bannerTimer));
-banner.addEventListener('mouseenter', () => clearInterval(bannerTimer));
-banner.addEventListener('touchend', startBannerAuto);
-banner.addEventListener('mouseleave', startBannerAuto);
+
+if (banner) {
+  banner.addEventListener('mouseenter', () => clearInterval(bannerTimer));
+  banner.addEventListener('mouseleave', startBannerAuto);
+  banner.addEventListener('touchstart', () => clearInterval(bannerTimer));
+  banner.addEventListener('touchend', startBannerAuto);
+
+  /* 修改 6：點左右兩側卡片時，也可以切換 */
+  banner.addEventListener('click', (e) => {
+    const card = e.target.closest('.banner-card');
+    if (!card) return;
+
+    if (card.classList.contains('prev')) {
+      e.stopPropagation();
+      prevBanner();
+    }
+
+    if (card.classList.contains('next')) {
+      e.stopPropagation();
+      nextBanner();
+    }
+  });
+}
 
 // =================== ADMIN: NAV ===================
 function renderAdminNav() {
