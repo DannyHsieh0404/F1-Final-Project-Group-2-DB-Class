@@ -745,7 +745,7 @@ body {
   background: linear-gradient(135deg, var(--primary), var(--primary-light)) !important;
   box-shadow: 0 8px 18px rgba(2,94,115,.18);
 }
-.modal-submit{ background: var(--danger) !important; }
+.modal-submit{ background: var(--primary) !important; }
 
 
 .section-title { padding: 18px 36px 12px; font-size: 17px; }
