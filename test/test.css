@@ -792,7 +792,7 @@ body {
 .act-thumb { border-radius: 16px; }
 .tag { padding: 4px 9px; font-weight: 700; }
 .progress-bar { height: 7px; background: #E8EEE9; }
-.progress-fill { background: linear-gradient(90deg, var(--primary), var(--accent)); }
+
 
 
 .shortcut-action-bar { padding: 0 36px !important; }
