@@ -79,7 +79,12 @@ function getPrimaryTag(tags) {
   return tags || 'Uncategorized';
 }
 
-const HEROCOLOR = { green:'var(--primary-pale)', orange:'var(--accent-pale)', purple:'#EDE7F6', blue:'#E3F2FD' };
+const HEROCOLOR = {
+  green: 'var(--green-pale)',
+  orange: 'var(--orange-pale)',
+  purple: 'var(--purple-pale)',
+  blue: 'var(--blue-pale)'
+};
 const DEFAULT_MEAL_OPTIONS = ['meat', 'veg'];
 let MEAL_OPTIONS = [...DEFAULT_MEAL_OPTIONS];
 const MEAL_META = {
@@ -375,24 +380,25 @@ function openDetail(id) {
   const already = myActivities.find(m => m.id === id);
   const btn = document.getElementById('regBtn');
   const calendarBtn = document.getElementById('calendarBtn');
-  
-  if (!currentUser) {
-    btn.textContent = 'Register Now';
-    btn.className = 'register-btn';
-    btn.disabled = false;
-  } else if (already) {
-    btn.textContent = '✕ Cancel Registration';
-    btn.className = 'register-btn cancel';
-    btn.disabled = false;
-  } else if (a.quota >= a.max) {
-    btn.textContent = 'Registration Full';
-    btn.className = 'register-btn';
-    btn.disabled = true;
-  } else {
-    btn.textContent = 'Register Now';
-    btn.className = 'register-btn';
-    btn.disabled = false;
-  }
+  const isFull = Number(a.quota) >= Number(a.max);
+
+if (already) {
+  btn.textContent = '✕ Cancel Registration';
+  btn.className = 'register-btn cancel';
+  btn.disabled = false;
+} else if (isFull) {
+  btn.textContent = 'Registration Full';
+  btn.className = 'register-btn';
+  btn.disabled = true;
+} else if (!currentUser) {
+  btn.textContent = 'Register Now';
+  btn.className = 'register-btn';
+  btn.disabled = false;
+} else {
+  btn.textContent = 'Register Now';
+  btn.className = 'register-btn';
+  btn.disabled = false;
+}
 
   if (calendarBtn) {
     if (already) {
@@ -802,12 +808,13 @@ function renderMine() {
       <div class="my-act-info">
         <h4>${m.title}</h4>
         <p>${m.date} · ${formatMealIcon(m.meal)} ${formatMealLabel(m.meal)}</p>
-        <div class="act-tags"><span class="tag ${TAGCOLOR[tag] || 'green'}">${tag}</span></div>
       </div>
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
+        <div class="my-act-right-btn">
         <a class="calendar-small-btn" href="${calendarUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><i class="ti ti-calendar-plus"></i>Calendar</a>
         <button class="cancel-small-btn" onclick="event.stopPropagation();cancelFromMine(${m.id})">Cancel</button>
+        </div>
       </div>
     </div>`;
   }).join('') + `</div>`;
@@ -904,11 +911,7 @@ async function toggleProfileEdit() {
 
 // =================== BANNER ===================
 const BANNER_LABELS = ['🔥 Hot', '🎨 New', '🎵 Limited'];
-const BANNER_GRADIENTS = [
-  'linear-gradient(135deg, #025E73 0%, #7ab752 100%)',
-  'linear-gradient(135deg, #025E73 0%, #F2EBEB 100%)',
-  'linear-gradient(135deg, #2EA69A 0%, #F2EBEB 100%)',
-];
+const BANNER_THEMES = ['banner-theme-1', 'banner-theme-2', 'banner-theme-3'];
 
 let bannerIndex = 0;
 let bannerTimer = null;
@@ -935,10 +938,9 @@ function renderBanner() {
 
   scroll.innerHTML = bannerItems.map((a, i) => `
     <div 
-      class="banner-card"
+      class="banner-card ${BANNER_THEMES[i % BANNER_THEMES.length]}"
       data-banner-index="${i}"
       onclick="openDetail(${a.id})"
-      style="background:${BANNER_GRADIENTS[i % BANNER_GRADIENTS.length]}"
     >
       <div class="label">${BANNER_LABELS[i % BANNER_LABELS.length]}</div>
       <div class="people">${a.quota} / ${a.max} Attending</div>
