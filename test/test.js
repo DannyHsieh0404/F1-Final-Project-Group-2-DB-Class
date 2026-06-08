@@ -279,9 +279,23 @@ function doFilter() {
 function renderCards() {
   const list = document.querySelector('.activity-list');
   if (!list) return;
-  list.innerHTML = ACTS.map(a => {
+  const now = new Date();
+  const sortedActs = [...ACTS].sort((a, b) => {
+    const dateA = parseCalendarDate(a.date);
+    const dateB = parseCalendarDate(b.date);
+    const aPast = dateA && dateA < now;
+    const bPast = dateB && dateB < now;
+    if (aPast && !bPast) return 1;
+    if (!aPast && bPast) return -1;
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateA - dateB;
+  });
+
+  list.innerHTML = sortedActs.map(a => {
     const reg = myActivities.find(m => m.id === a.id);
-    const pct = Math.round(a.quota / a.max * 100);
+    const pct = a.max > 0 ? Math.min(100, Math.round(a.quota / a.max * 100)) : 0;
     return `
     <div class="act-card" onclick="openDetail(${a.id})">
       <div class="act-card-top">
@@ -381,8 +395,13 @@ function openDetail(id) {
   const btn = document.getElementById('regBtn');
   const calendarBtn = document.getElementById('calendarBtn');
   const isFull = Number(a.quota) >= Number(a.max);
+  const isPast = parseCalendarDate(a.date) && parseCalendarDate(a.date) < new Date();
 
-if (already) {
+if (isPast) {
+  btn.textContent = 'Event Ended';
+  btn.className = 'register-btn';
+  btn.disabled = true;
+} else if (already) {
   btn.textContent = '✕ Cancel Registration';
   btn.className = 'register-btn cancel';
   btn.disabled = false;
@@ -401,7 +420,7 @@ if (already) {
 }
 
   if (calendarBtn) {
-    if (already) {
+    if (already && !isPast) {
       calendarBtn.href = buildGoogleCalendarUrl(getCalendarEvent(id));
       calendarBtn.hidden = false;
     } else {
@@ -799,7 +818,20 @@ function renderMine() {
     el.innerHTML = `<div class="empty-state"><i class="ti ti-mood-empty"></i><p>You haven't registered for any events yet</p><button class="lp-btn outline" onclick="switchTab(0)" style="margin-top:4px">Explore Events</button></div>`;
     return;
   }
-  el.innerHTML = `<div class="my-act-list">` + myActivities.map(m => {
+  const sortedActivities = [...myActivities].sort((a, b) => {
+    const dateA = parseCalendarDate(a.date);
+    const dateB = parseCalendarDate(b.date);
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateA - dateB;
+  });
+
+  const now = new Date();
+  const upcoming = sortedActivities.filter(m => { const d = parseCalendarDate(m.date); return d && d >= now; });
+  const past = sortedActivities.filter(m => { const d = parseCalendarDate(m.date); return !d || d < now; });
+
+  const cardHtml = (m, isPast = false) => {
     const calendarUrl = buildGoogleCalendarUrl(getCalendarEvent(m.id));
     const tag = getPrimaryTag(m.tags);
     return `
@@ -812,12 +844,21 @@ function renderMine() {
       <div class="my-act-right">
         <span class="my-badge confirmed">Confirmed</span>
         <div class="my-act-right-btn">
+        ${!isPast ? `
         <a class="calendar-small-btn" href="${calendarUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><i class="ti ti-calendar-plus"></i>Calendar</a>
         <button class="cancel-small-btn" onclick="event.stopPropagation();cancelFromMine(${m.id})">Cancel</button>
+        ` : ''}
         </div>
       </div>
     </div>`;
-  }).join('') + `</div>`;
+  };
+
+  el.innerHTML = `<div class="my-act-list">
+    <div class="section-title">Upcoming Events</div>
+    ${upcoming.length ? upcoming.map(m => cardHtml(m)).join('') : '<div class="empty-state"><p>No upcoming events</p></div>'}
+    <div class="section-title" style="margin-top:16px">Past Events</div>
+    ${past.length ? past.map(m => cardHtml(m, true)).join('') : '<div class="empty-state"><p>No past events</p></div>'}
+  </div>`;
 }
 
 function openDetailFromMine(id) {
