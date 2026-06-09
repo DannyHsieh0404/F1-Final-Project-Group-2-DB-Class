@@ -357,11 +357,9 @@ body {
 .modal-tab { flex:1; padding:9px; text-align:center; font-size:14px; font-weight:600; cursor:pointer; background:var(--bg); color:var(--text-muted); }
 .modal-tab.active { background:var(--primary); color:#fff; }
 .modal-form { display:flex; flex-direction:column; gap:9px; }
-.modal-form input, .modal-form select, .modal-form textarea {
-  width:100%; padding:10px 12px; border:0.5px solid var(--border); border-radius:10px;
-  font-size:14px; background:var(--bg); color:var(--text); font-family:inherit;
-}
+.modal-form input, .modal-form textarea, .form-select-btn { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;color: var(--text); background: var(--bg); font-family: inherit; }
 .modal-form input:focus, .modal-form textarea:focus { outline:2px solid var(--primary-light); }
+.modal-form input::placeholder,.modal-form textarea::placeholder {color: var(--text-muted);}
 .modal-submit { width:100%; padding:12px; background:var(--primary); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; margin-top:4px; font-family:inherit; }
 .modal-cancel { width:100%; padding:10px; background:none; border:none; font-size:14px; color:var(--text-muted); cursor:pointer; font-family:inherit; }
 
@@ -752,13 +750,12 @@ body {
   gap: 10px !important;
 }
 .search-filter-bar input,
-.search-filter-bar select {
+.category-select-btn {
   height: 44px;
   background: var(--card) !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--shadow-sm);
 }
-.search-filter-bar button,
 .register-btn,
 .modal-submit,
 .save-btn,
@@ -1228,7 +1225,16 @@ body {
 }
 
 /* Filter tag select */
-#filterTag { flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white; }
+/*category-select { flex: 1; min-width: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white; }*/
+.category-select { position: relative; flex: 1; min-width: 120px; font-size: 14px; }
+.category-select-btn { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: white; font-size: 14px; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.category-select-btn:hover {background: var(--bg);}
+.category-select-arrow { margin-left: 8px; font-size: 12px; }
+.category-select-menu { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 50; background: white; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); max-height: 240px; overflow-y: auto; }
+.category-select.open .category-select-menu {display: block;}
+.category-select-option { padding: 10px 12px; cursor: pointer; font-size: 14px; }
+.category-select-option:hover {background: var(--success-pale);}
+.category-select-option.active {font-weight: 600;background: var(--bg-soft);}
 
 /* Quota card right-aligned side */
 .quota-right { text-align: right; }
@@ -1330,6 +1336,80 @@ body {
 /* Activity form selects need flex:1 within emoji-color-row */
 .emoji-color-row > select { flex: 1; }
 
+.emoji-color-row {
+  display: flex;
+  gap: 10px;
+}
+
+.emoji-color-row .form-select {
+  flex: 1;
+}
+
+.form-select {
+  position: relative;
+  width: 100%;
+  font-size: 14px;
+}
+
+.form-select-btn {
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-select-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.form-select-arrow {
+  margin-left: 8px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.form-select-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.form-select.open .form-select-menu {
+  display: block;
+}
+
+.form-select-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.form-select-option:hover {
+  background: var(--primary-pale);
+}
+
+.form-select-option.active {
+  font-weight: 600;
+  background: #f0f0f0;
+}
+@media (max-width: 480px) {
+  .emoji-color-row {
+    flex-direction: column;
+  }
+}
 /* af_desc textarea extra styles not covered by modal-form textarea */
 #af_desc {
   resize: vertical;

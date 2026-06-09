@@ -37,9 +37,14 @@
           </div>
 
           
-          <select id="filterTag">
-            <option value="all">All Tags</option>
-          </select>
+          <div class="category-select" id="filterTag" data-value="all">
+            <button type="button" class="category-select-btn">
+              <span class="category-select-text">All Tags</span>
+              <span class="category-select-arrow">▾</span>
+            </button>
+          
+            <div class="category-select-menu"></div>
+          </div>
           
         </div>
 
@@ -280,29 +285,51 @@
           <input type="number" placeholder="Total Quota" id="af_max" min="1">
         </div>
         <div class="emoji-color-row">
-          <select id="af_emoji">
-            <option value="🏀">🏀 </option>
-            <option value="🎨">🎨 </option>
-            <option value="🎵">🎵 </option>
-            <option value="🌿">🌿 </option>
-            <option value="💻">💻 </option>
-            <option value="📸">📸 </option>
-            <option value="🧠">🧠 </option>
-            <option value="🌏">🌏 </option>
-            <option value="🏃">🏃 </option>
-            <option value="🎮">🎮 </option>
-            <option value="🍳">🍳 </option>
-          </select>
-          <select id="af_color">
-            <option value="green">Green</option>
-            <option value="orange">Orange</option>
-            <option value="purple">Purple</option>
-            <option value="blue">Blue</option>
-          </select>
+          <!-- Select emoji -->
+          <div class="form-select" id="af_emoji" data-value="">
+            <button type="button" class="form-select-btn">
+              <span class="form-select-text">Emoji</span>
+              <span class="form-select-arrow">▾</span>
+            </button>
+          
+            <div class="form-select-menu">
+              <div class="form-select-option" data-value="🏀">🏀</div>
+              <div class="form-select-option" data-value="🎨">🎨</div>
+              <div class="form-select-option" data-value="🎵">🎵</div>
+              <div class="form-select-option" data-value="🌿">🌿</div>
+              <div class="form-select-option" data-value="💻">💻</div>
+              <div class="form-select-option" data-value="📸">📸</div>
+              <div class="form-select-option" data-value="🧠">🧠</div>
+              <div class="form-select-option" data-value="🌏">🌏</div>
+              <div class="form-select-option" data-value="🏃">🏃</div>
+              <div class="form-select-option" data-value="🎮">🎮</div>
+              <div class="form-select-option" data-value="🍳">🍳</div>
+            </div>
+          </div>
+          <!-- Select color -->
+          <div class="form-select" id="af_color" data-value="">
+            <button type="button" class="form-select-btn">
+              <span class="form-select-text">Color</span>
+              <span class="form-select-arrow">▾</span>
+            </button>
+          
+            <div class="form-select-menu">
+              <div class="form-select-option" data-value="green">Green</div>
+              <div class="form-select-option" data-value="orange">Orange</div>
+              <div class="form-select-option" data-value="purple">Purple</div>
+              <div class="form-select-option" data-value="blue">Blue</div>
+            </div>
+          </div>
         </div>
-        <select id="af_tags" aria-label="Category">
-          <option value="">Loading categories...</option>
-        </select>
+        <!-- Select tag -->
+        <div class="form-select" id="af_tags" data-value="">
+          <button type="button" class="form-select-btn">
+            <span class="form-select-text">Category</span>
+            <span class="form-select-arrow">▾</span>
+          </button>
+        
+          <div class="form-select-menu"></div>
+        </div>
         <textarea id="af_desc" placeholder="Description"></textarea>
         <button class="modal-submit" onclick="submitActivityForm()">Save</button>
         <button class="modal-cancel" onclick="closeActivityForm()">Cancel</button>

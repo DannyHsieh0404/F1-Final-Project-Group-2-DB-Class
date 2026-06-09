@@ -40,24 +40,111 @@ function getCategoryId(categoryName) {
 
 function renderCategorySelects() {
   const filterTag = document.getElementById('filterTag');
+
   if (filterTag) {
-    const currentValue = filterTag.value || 'all';
-    filterTag.innerHTML = [
-      '<option value="all">All Tags</option>',
-      ...CATEGORIES.map(c => `<option value="${c.name}">${c.name}</option>`)
-    ].join('');
-    filterTag.value = CATEGORIES.some(c => c.name === currentValue) ? currentValue : 'all';
+    const text = filterTag.querySelector('.category-select-text');
+    const menu = filterTag.querySelector('.category-select-menu');
+
+    const currentValue = filterTag.dataset.value || 'all';
+
+    const options = [
+      { value: 'all', label: 'All Tags' },
+      ...CATEGORIES.map(c => ({
+        value: c.name,
+        label: c.name
+      }))
+    ];
+
+    const validValue = options.some(o => o.value === currentValue)
+      ? currentValue
+      : 'all';
+
+    filterTag.dataset.value = validValue;
+
+    const selectedOption = options.find(o => o.value === validValue);
+
+    if (text) {
+      text.textContent = selectedOption?.label || 'All Tags';
+    }
+
+    if (menu) {
+      menu.innerHTML = options.map(option => `
+        <div 
+          class="category-select-option ${option.value === validValue ? 'active' : ''}" 
+          data-value="${option.value}"
+        >
+          ${option.label}
+        </div>
+      `).join('');
+    }
   }
 
   const adminTag = document.getElementById('af_tags');
+
   if (adminTag) {
-    const currentValue = adminTag.value;
-    adminTag.innerHTML = CATEGORIES.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-    adminTag.value = CATEGORIES.some(c => c.name === currentValue)
+    const currentValue = adminTag.dataset.value;
+
+    const options = CATEGORIES.map(c => ({
+      value: c.name,
+      label: c.name
+    }));
+
+    const fallbackValue = CATEGORIES.some(c => c.name === currentValue)
       ? currentValue
-      : (CATEGORIES[0]?.name || '');
+      : '';
+
+    renderFormSelectOptions('af_tags', options, fallbackValue);
   }
-}
+  }
+
+document.addEventListener('click', function (e) {
+  const filterTag = document.getElementById('filterTag');
+  if (!filterTag) return;
+
+  const btn = e.target.closest('.category-select-btn');
+  const option = e.target.closest('.category-select-option');
+
+  // 點按鈕：打開 / 關閉選單
+  if (btn && filterTag.contains(btn)) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    filterTag.classList.toggle('open');
+    return;
+  }
+
+  // 點選項：更新目前選到的分類
+  if (option && filterTag.contains(option)) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const value = option.dataset.value;
+    const label = option.textContent.trim();
+
+    filterTag.dataset.value = value;
+
+    const text = filterTag.querySelector('.category-select-text');
+    if (text) {
+      text.textContent = label;
+    }
+
+    filterTag.querySelectorAll('.category-select-option').forEach(el => {
+      el.classList.remove('active');
+    });
+
+    option.classList.add('active');
+    filterTag.classList.remove('open');
+
+    requestAnimationFrame(() => {
+      filterTag.dispatchEvent(new Event('change'));
+    });
+
+    return;
+  }
+
+  // 點外面：關閉選單
+  filterTag.classList.remove('open');
+});
 
 async function loadCategories() {
   try {
@@ -85,6 +172,7 @@ const HEROCOLOR = {
   purple: 'var(--purple-pale)',
   blue: 'var(--blue-pale)'
 };
+
 const DEFAULT_MEAL_OPTIONS = ['meat', 'veg'];
 let MEAL_OPTIONS = [...DEFAULT_MEAL_OPTIONS];
 const MEAL_META = {
@@ -249,17 +337,40 @@ async function switchAdminTab(i) {
 function resetFilter() {
   const searchInput = document.getElementById('searchKeyword');
   const filterTag = document.getElementById('filterTag');
+
   if (searchInput) searchInput.value = '';
-  if (filterTag) filterTag.value = 'all';
+
+  if (filterTag) {
+    filterTag.dataset.value = 'all';
+
+    const text = filterTag.querySelector('.category-select-text');
+    if (text) text.textContent = 'All Tags';
+
+    filterTag.querySelectorAll('.category-select-option').forEach(option => {
+      option.classList.toggle('active', option.dataset.value === 'all');
+    });
+
+    filterTag.classList.remove('open');
+  }
+
   if (window.allEvents) ACTS = [...window.allEvents];
+
   renderCards();
 }
 
 function doFilter() {
   if (!window.allEvents) return;
 
-  const keyword = document.getElementById('searchKeyword').value.toLowerCase().trim();
-  const selectedTag = document.getElementById('filterTag').value;
+  const searchInput = document.getElementById('searchKeyword');
+  const filterTag = document.getElementById('filterTag');
+
+  const keyword = searchInput
+    ? searchInput.value.toLowerCase().trim()
+    : '';
+
+  const selectedTag = filterTag
+    ? (filterTag.dataset.value || 'all')
+    : 'all';
 
   ACTS = window.allEvents.filter(act => {
     const matchText = !keyword || (
@@ -267,8 +378,13 @@ function doFilter() {
       (act.loc && act.loc.toLowerCase().includes(keyword)) ||
       (act.desc && act.desc.toLowerCase().includes(keyword))
     );
-    const tags = Array.isArray(act.tags) ? act.tags : (act.tags ? [act.tags] : []);
+
+    const tags = Array.isArray(act.tags)
+      ? act.tags
+      : (act.tags ? [act.tags] : []);
+
     const matchTag = selectedTag === 'all' || tags.includes(selectedTag);
+
     return matchText && matchTag;
   });
 
@@ -279,45 +395,74 @@ function doFilter() {
 function renderCards() {
   const list = document.querySelector('.activity-list');
   if (!list) return;
+
   const now = new Date();
+
   const sortedActs = [...ACTS].sort((a, b) => {
     const dateA = parseCalendarDate(a.date);
     const dateB = parseCalendarDate(b.date);
+
     const aPast = dateA && dateA < now;
     const bPast = dateB && dateB < now;
+
     if (aPast && !bPast) return 1;
     if (!aPast && bPast) return -1;
     if (!dateA && !dateB) return 0;
     if (!dateA) return 1;
     if (!dateB) return -1;
+
     return dateA - dateB;
   });
 
-  list.innerHTML = sortedActs.map(a => {
+  const html = sortedActs.map(a => {
     const reg = myActivities.find(m => m.id === a.id);
-    const pct = a.max > 0 ? Math.min(100, Math.round(a.quota / a.max * 100)) : 0;
+    const pct = a.max > 0
+      ? Math.min(100, Math.round(a.quota / a.max * 100))
+      : 0;
+
+    const tags = Array.isArray(a.tags)
+      ? a.tags
+      : (a.tags ? [a.tags] : []);
+
     return `
-    <div class="act-card" onclick="openDetail(${a.id})">
-      <div class="act-card-top">
-        <div class="act-thumb ${a.color}">${a.emoji}</div>
-        <div class="act-info">
-          <h3>${a.title}</h3>
-          <div class="act-meta"><i class="ti ti-calendar"></i><span class="act-date">${a.date}</span></div>
-          <div class="act-tags">
-            ${a.tags.map(t => `<span class="tag ${TAGCOLOR[t]||'green'}">${t}</span>`).join('')}
-            ${reg ? '<span class="tag green">✓ Registered</span>' : ''}
+      <div class="act-card" onclick="openDetail(${a.id})">
+        <div class="act-card-top">
+          <div class="act-thumb ${a.color || 'green'}">${a.emoji || ''}</div>
+
+          <div class="act-info">
+            <h3>${a.title || ''}</h3>
+
+            <div class="act-meta">
+              <i class="ti ti-calendar"></i>
+              <span class="act-date">${a.date || ''}</span>
+            </div>
+
+            <div class="act-tags">
+              ${tags.map(t => `<span class="tag ${TAGCOLOR[t] || 'green'}">${t}</span>`).join('')}
+              ${reg ? '<span class="tag green">✓ Registered</span>' : ''}
+            </div>
           </div>
         </div>
-      </div>
-      <div class="act-bottom">
-        <div class="progress-wrap">
-          <div class="progress-label">${a.quota} / ${a.max} Attending</div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+
+        <div class="act-bottom">
+          <div class="progress-wrap">
+            <div class="progress-label">${a.quota || 0} / ${a.max || 0} Attending</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${pct}%"></div>
+            </div>
+          </div>
+
+          <span class="act-spots">${Math.max(0, (a.max || 0) - (a.quota || 0))} Spots Left</span>
         </div>
-        <span class="act-spots">${a.max - a.quota} Spots Left</span>
       </div>
-    </div>`;
+    `;
   }).join('');
+
+  list.innerHTML = html || `
+    <div class="empty-state">
+      No activities found.
+    </div>
+  `;
 }
 
 function padCalendarPart(value) {
@@ -1267,11 +1412,11 @@ function openAddActivity() {
   document.getElementById('af_time').value  = '';
   document.getElementById('af_loc').value   = '';
   document.getElementById('af_quota').value = '0';
-  document.getElementById('af_max').value   = '100';
-  document.getElementById('af_emoji').value = '💻';
-  document.getElementById('af_color').value = 'blue';
-  const defaultCategory = CATEGORIES.find(c => c.name === 'IT / Info') || CATEGORIES[0];
-  document.getElementById('af_tags').value  = defaultCategory?.name || '';
+  document.getElementById('af_max').value   = '';
+  setFormSelectValue('af_emoji', '', 'Emoji');
+  setFormSelectValue('af_color', '', 'Color');
+  setFormSelectValue('af_tags', '', 'Category');
+
   document.getElementById('af_desc').value  = '';
   document.getElementById('activityFormModal').classList.add('open');
 }
@@ -1279,20 +1424,45 @@ function openAddActivity() {
 function openEditActivity(id) {
   const a = ACTS.find(x => x.id === id);
   if (!a) return;
+
   editingActId = id;
-  document.getElementById('actFormTitle').textContent    = 'Edit Event';
+
+  document.getElementById('actFormTitle').textContent = 'Edit Event';
   document.getElementById('actFormSubtitle').textContent = `Editing: ${a.title}`;
-  document.getElementById('af_title').value = a.title;
+  document.getElementById('af_title').value = a.title || '';
+
   const editDateTime = splitActivityDateTime(a.date);
-  document.getElementById('af_date').value  = editDateTime.date;
-  document.getElementById('af_time').value  = editDateTime.time;
-  document.getElementById('af_loc').value   = a.loc;
-  document.getElementById('af_quota').value = a.quota;
-  document.getElementById('af_max').value   = a.max;
-  document.getElementById('af_emoji').value = a.emoji;
-  document.getElementById('af_color').value = a.color;
-  document.getElementById('af_tags').value  = getPrimaryTag(a.tags);
-  document.getElementById('af_desc').value  = a.desc;
+  document.getElementById('af_date').value = editDateTime.date;
+  document.getElementById('af_time').value = editDateTime.time;
+
+  document.getElementById('af_loc').value = a.loc || '';
+  document.getElementById('af_quota').value = a.quota || 0;
+  document.getElementById('af_max').value = a.max || 100;
+
+  setFormSelectValue('af_emoji', a.emoji || '', a.emoji || 'Emoji');
+
+  const colorLabelMap = {
+    green: 'Green',
+    orange: 'Orange',
+    purple: 'Purple',
+    blue: 'Blue'
+  };
+
+  setFormSelectValue(
+    'af_color',
+    a.color || '',
+    colorLabelMap[a.color] || 'Color'
+  );
+
+  const category = getPrimaryTag(a.tags);
+
+  setFormSelectValue(
+    'af_tags',
+    category || '',
+    category || 'Category'
+  );
+
+  document.getElementById('af_desc').value = a.desc || '';
   document.getElementById('activityFormModal').classList.add('open');
 }
 
@@ -1316,20 +1486,34 @@ async function submitActivityForm() {
   const time  = document.getElementById('af_time').value.trim();
   const loc   = document.getElementById('af_loc').value.trim();
   const max   = parseInt(document.getElementById('af_max').value) || 100;
-  const emoji = document.getElementById('af_emoji').value;
-  const color = document.getElementById('af_color').value;
-  const desc  = document.getElementById('af_desc').value.trim();
-  const category = document.getElementById('af_tags').value;
+
+  const emoji = getFormSelectValue('af_emoji');
+  const color = getFormSelectValue('af_color');
+  const category = getFormSelectValue('af_tags');
+
+  const desc = document.getElementById('af_desc').value.trim();
   const category_id = getCategoryId(category);
 
-  if (!title || !date || !time || !loc) return alert('Please fill in the event name, date, time, and location');
+  if (!title || !date || !time || !loc) {
+    return alert('Please fill in the event name, date, time, and location');
+  }
+
+  if (!emoji || !color || !category) {
+    return alert('Please select emoji, color, and category');
+  }
 
   const { event_day, event_time } = parseActivityDateTime(date, time);
 
   const payload = {
-    title, date: event_day, time: event_time, loc,
-    max, student_capacity: max,
-    emoji, color, description: desc,
+    title,
+    date: event_day,
+    time: event_time,
+    loc,
+    max,
+    student_capacity: max,
+    emoji,
+    color,
+    description: desc,
     category_id,
     host_id: currentUser.id_db
   };
@@ -1341,8 +1525,10 @@ async function submitActivityForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
+
       document.getElementById('activityFormModal').classList.remove('open');
       showAdminSuccess('Event Updated', `"${title}" has been successfully synchronized to the database.`);
     } else {
@@ -1351,8 +1537,10 @@ async function submitActivityForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Creation failed');
+
       document.getElementById('activityFormModal').classList.remove('open');
       showAdminSuccess('Event Created', `"${title}" has been successfully added to the database event list.`);
     }
@@ -1369,6 +1557,110 @@ async function submitActivityForm() {
 function closeActivityForm() {
   document.getElementById('activityFormModal').classList.remove('open');
 }
+
+function getFormSelectValue(id) {
+  const select = document.getElementById(id);
+  return select ? select.dataset.value : '';
+}
+
+function setFormSelectValue(id, value, label = value) {
+  const select = document.getElementById(id);
+  if (!select) return;
+
+  select.dataset.value = value;
+
+  const text = select.querySelector('.form-select-text');
+  if (text) text.textContent = label;
+
+  select.querySelectorAll('.form-select-option').forEach(option => {
+    option.classList.toggle('active', option.dataset.value === value);
+  });
+}
+
+function renderFormSelectOptions(id, options, fallbackValue = '') {
+  const select = document.getElementById(id);
+  if (!select) return;
+
+  const menu = select.querySelector('.form-select-menu');
+  if (!menu) return;
+
+  const currentValue = select.dataset.value || fallbackValue;
+  const validValue = options.some(option => option.value === currentValue)
+  ? currentValue
+  : '';
+
+  menu.innerHTML = options.map(option => `
+    <div 
+      class="form-select-option ${option.value === validValue ? 'active' : ''}" 
+      data-value="${option.value}"
+    >
+      ${option.label}
+    </div>
+  `).join('');
+
+  const selectedOption = options.find(option => option.value === validValue);
+
+  const placeholderMap = {
+    af_emoji: 'Emoji',
+    af_color: 'Color',
+    af_tags: 'Category'
+  };
+
+  setFormSelectValue(
+    id,
+    validValue,
+    selectedOption?.label || placeholderMap[id] || ''
+  );
+}
+
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.form-select-btn');
+  const option = e.target.closest('.form-select-option');
+
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const select = btn.closest('.form-select');
+
+    document.querySelectorAll('.form-select.open').forEach(el => {
+      if (el !== select) el.classList.remove('open');
+    });
+
+    select.classList.toggle('open');
+    return;
+  }
+
+  if (option) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const select = option.closest('.form-select');
+    const value = option.dataset.value;
+    const label = option.textContent.trim();
+
+    if (option) {
+      e.preventDefault();
+      e.stopPropagation();
+    
+      const select = option.closest('.form-select');
+      const value = option.dataset.value;
+      const label = option.textContent.trim();
+    
+      setFormSelectValue(select.id, value, label);
+    
+      select.classList.remove('open');
+    
+      return;
+    }
+
+    return;
+  }
+
+  document.querySelectorAll('.form-select.open').forEach(el => {
+    el.classList.remove('open');
+  });
+});
 
 // =================== ADMIN: DELETE ===================
 function openDeleteModal(id) {
